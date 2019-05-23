@@ -1,0 +1,9 @@
+# files
+.DS_Store
+
+
+# directories
+.vscode
+
+layers/ml/opp-115
+layers/ml/vectors
