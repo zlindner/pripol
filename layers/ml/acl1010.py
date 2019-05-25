@@ -1,10 +1,12 @@
 from glob import glob
 from xml.etree import cElementTree as et
+import re
+from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
 from gensim.models import Word2Vec as w2v
 from gensim.models import KeyedVectors as kv
-from gensim.models.phrases import Phrases as phrases, Phraser as phraser
+from gensim.models.phrases import Phrases, Phraser
 import multiprocessing
 
 from collections import defaultdict
@@ -41,17 +43,38 @@ def load_corpus():
 
     return corpus
 
-# preprocesses the corpus
+# preprocesses and tokenizes the corpus
 def preprocess(corpus):
     corpus = ' '.join(corpus.split()) # remove all whitespace characters
-    #TODO other preprocessing
+    corpus = corpus.lower() # lowercase
+    corpus = re.sub('[()\[\]\{\};:`\"]', '', corpus) # remove punctuation TODO remove apostrophe? remove period? remove comma?
 
-    return corpus
+    sentences = tokenize(corpus)
+    stop_words = set(stopwords.words('english')) # initialize stopwords
+
+    for sentence in sentences:
+        for word in list(sentence): # iterate on a copy
+            if word in stop_words:
+                sentence.remove(word) # remove stopwords
+
+    sentences = detect_phrases(sentences)
+
+    return sentences
+
+# detects common phrases (ex. privacy_policy is a separate vector from privacy and policy)
+def detect_phrases(sentences):
+    min_phrases = 30 # ignores phrases with total collected count lower than min_phrases    
+
+    phrases = Phrases(sentences, min_count=min_phrases) # generate phrases
+    bigram = Phraser(phrases) # discard model state cutting down memory use
+
+    return bigram[sentences]
 
 # tokenizes the corpus into a list of lists of tokens
 def tokenize(corpus):
     return [word_tokenize(sentence) for sentence in sent_tokenize(corpus)]
 
+# displays the n most frequent words in the corpus
 def most_frequent(sentences, n):
     word_freq = defaultdict(int)
     
@@ -79,20 +102,11 @@ def train_vectors(sentences):
 def load_vectors():
     return kv.load('vectors/acl1010.vec', mmap='r')
 
-#train_vectors(tokenize(preprocess(load_corpus())))
-
-#sentences = tokenize(preprocess(load_corpus()))
-#most_frequent(sentences, 20)
+sentences = preprocess(load_corpus())
+most_frequent(sentences, 50)
 
 #vec = load_vectors()
-#print(len(vec.wv.vocab)) # 181
-
 #print(vec.wv.similar_by_word('data'))
-
-#corpus = load_corpus()
-#corpus = preprocess(corpus)
-#tok = tokenize(corpus)
-#print(sentences)
 
 # TODO phrases
 #p = phrases(sentences, min_count=30)
