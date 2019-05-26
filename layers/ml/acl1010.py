@@ -115,15 +115,9 @@ def train_vectors(sentences):
     print('writing vectors to disk...')
     model.save('vectors/acl1010.vec') # write model to disk
 
-# loads word2vec vectors
+# load acl1010 vectors
 def load_vectors():
-    print('\n# loading vectors')
+    print('\n# loading acl1010 vectors')
     vectors = kv.load('vectors/acl1010.vec', mmap='r')
     print('loaded %s vectors' % (len(vectors.wv.vocab)))
     return vectors
-
-train_vectors(preprocess(load_corpus()))
-#sentences = preprocess(load_corpus())
-
-#vec = load_vectors()
-#print(vec.wv.similar_by_word('data'))
