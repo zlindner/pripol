@@ -1,14 +1,9 @@
-from tqdm import tqdm
-import glob
+from glob import glob
 import pandas as pd
-from nltk.corpus import stopwords
-from nltk.tokenize.treebank import TreebankWordTokenizer
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing import sequence
-import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 
-pd.options.mode.chained_assignment = None # disable chained assignment warning
-
+# the 10 data practice categories from https://usableprivacy.org/static/files/swilson_acl_2016.pdf
 DATA_PRACTICES = [
 	'First Party Collection/Use',
 	'Third Party Sharing/Collection',
@@ -22,88 +17,86 @@ DATA_PRACTICES = [
 	'Other'
 ]
 
-print('\n-- loading opp-115 --\n')
+# loads annotations
+def load_annotations():
+	print('\n# loading annotations')
 
-# load annotations
-print('loading annotations')
+	annotations = [] # list of annotation dataframes
 
-a_list = [] # list of annotations
+	for filename in glob('opp-115/annotations/*.csv'):
+		df = pd.read_csv(filename, sep=',', header=None, names=['annotation_id', 'batch_id', 'annotator_id', 'policy_id', 'segment_id', 'category', 'attr_vals', 'date', 'url'])
+		df['pretty_print'] = ''	
+		df['filename'] = ''
+		annotations.append(df)
 
-for f in tqdm(glob.glob('opp-115/annotations/*.csv')):
-	df = pd.read_csv(f, sep=',', header=None, names=['annotation_id', 'batch_id', 'annotator_id', 'policy_id', 'segment_id', 'category', 'attr-vals', 'date', 'url'])
-	df['pretty_print'] = '' # initialize pretty print text to empty string for later
-	a_list.append(df)
+	df = pd.concat(annotations) # create single dataframe from list
+	df.reset_index(inplace=True)
 
-df_a = pd.concat(a_list) # create single annotation dataframe from list of annotations
+	print('loaded %s annotations for %s privacy policies' % (df.shape[0], len(annotations)))
 
-# load pretty print
-print('loading pretty print')
+	return df
 
-pp_list = [] # list of pretty print
+# loads pretty prints
+def load_pretty_prints():
+	print('\n# loading pretty prints')
 
-for f in tqdm(glob.glob('opp-115/pretty_print/*.csv')):
-	df = pd.read_csv(f, sep=',', header=None, names=['annotation_id', 'segment_id', 'annotator_id', 'text'])
-	pp_list.append(df)
+	pretty_prints = [] # list of pretty prints
 
-df_pp = pd.concat(pp_list) # create single pretty print dataframe from list of pretty print
+	for filename in glob('opp-115/pretty_print/*.csv'):
+		df = pd.read_csv(filename, sep=',', header=None, names=['annotation_id', 'segment_id', 'annotator_id', 'pretty_print'])
+		df['filename'] = filename[21:] # track filename
+		pretty_prints.append(df)
 
-# loop through each row of annotation dataframe
-print('linking annotations with corresponding pretty printed text')
+	df = pd.concat(pretty_prints)
+	df.reset_index(inplace=True)
 
-for i, row in tqdm(df_a.iterrows()):
-	match = df_pp.loc[df_pp['annotation_id'] == row['annotation_id']] # locate pretty print row with annotation_id corresponding to current row
-	df_a.at[i, 'pretty_print'] = match['text']
+	print('loaded %s pretty prints for %s privacy policies' % (df.shape[0], len(pretty_prints)))
 
-# split dataframe into 2 separate for training in testing (training 65%, testing 35%)
-size_train = int(df_a.shape[0] / 115 * 65)
-df_train, df_test = df_a[:size_train], df_a[size_train:]
+	return df
 
-df_train.reset_index(inplace=True)
-df_test.reset_index(inplace=True)
+# links annotations and their corresponding pretty prints by annotation id
+def link_dataframes(annotations, pretty_prints):
+	print('\n# linking annotations with pretty prints')
 
-print('loaded %s rows for training' %(df_train.shape[0]))
-print('loaded %s rows for testing' % (df_test.shape[0]))
+	for i, row in annotations.iterrows():
+		link = pretty_prints.loc[pretty_prints['annotation_id'] == row['annotation_id']] 
+		annotations.at[i, 'pretty_print'] = link['pretty_print']
+		annotations.at[i, 'filename'] = link['filename']
 
-# preprocessing 
-stop_words = set(stopwords.words('english')) # initialize stopwords
-stop_words.update(['.', ',', '"', "'", ':', ';', '(', ')', '[', ']', '{', '}']) # add punctuation to stopwords
+	print('updated %s rows' % (annotations.shape[0]))
 
-tokenizer = TreebankWordTokenizer()
+# generates various statistics pertaining to the opp115
+def generate_statistics(annotations):
+	print('\n# generating statistics')
 
-# preprocess training data
-pretty_print_train = df_train['pretty_print'].tolist() # raw pretty printed text
-preprocessed_train = [] # preprocessed pretty printed text
+	category_freqs = annotations['category'].value_counts()
 
-for s in tqdm(pretty_print_train):
-	tokens = tokenizer.tokenize(s)
-	filtered = [word for word in tokens if word.lower() not in stop_words] # remove stopwords from text
-	preprocessed_train.append(" ".join(filtered))
+	print(category_freqs)
 
-# preprocess testing data
-pretty_print_test = df_test['pretty_print'].tolist() # raw pretty printed text
-preprocessed_test = [] # preprocessed pretty printed text
+# splits the dataframe into training and testing subsets 
+def split_train_test(df):
+	print('\n# splitting into training, testing, and validation subsets')
 
-for s in tqdm(pretty_print_test):
-	if type(s) is not str: continue # required due to bug in annotation software, see manual.txt: Errant Span Indexes
+	y = df.pop('category')
+	X = df
+	
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.0766, random_state=42)
 
-	tokens = tokenizer.tokenize(s)
-	filtered = [word for word in tokens if word.lower() not in stop_words] # remove stopwords from text
-	preprocessed_test.append(" ".join(filtered))
+	return X_train, X_test, y_train, y_test
 
-# tokenize data
-tokenizer = Tokenizer(num_words=100000, lower=True, char_level=False)
-tokenizer.fit_on_texts(preprocessed_train + preprocessed_test)
+# partitions X into training and validation subsets n times
+def split_stratified_kfold(X, y, n):
+	skf = StratifiedKFold(n_splits=n, random_state=42)
+	
+	for train_index, val_index in skf.split(X, y):
+		X_train, X_val = X.loc[X.index.intersection(train_index)], X.loc[X.index.intersection(val_index)]
+		y_train, y_val = y.loc[y.index.intersection(train_index)], y.loc[y.index.intersection(val_index)]
 
-seq_train = tokenizer.texts_to_sequences(preprocessed_train)
-seq_test = tokenizer.texts_to_sequences(preprocessed_test)
+annotations = load_annotations()
+pretty_prints = load_pretty_prints()
+link_dataframes(annotations, pretty_prints)
 
-word_index = tokenizer.word_index
-print('dictionary size: ', len(word_index))
+generate_statistics(annotations)
 
-df_train['len'] = df_train['pretty_print'].apply(lambda words: len(words.split(' ')))
-max_seq_len = np.round(df_train['len'].mean() + df_train['len'].std()).astype(int)
-
-seq_train = sequence.pad_sequences(seq_train, maxlen=max_seq_len)
-seq_test = sequence.pad_sequences(seq_test, maxlen=max_seq_len)
-
-# create embedding matrix
+X_train, X_test, y_train, y_test = split_train_test(annotations)
+split_stratified_kfold(X_train, y_train, 10)
