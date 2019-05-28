@@ -5,7 +5,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
 from gensim.models import Word2Vec as w2v
-from gensim.models import KeyedVectors as kv
 from gensim.models.phrases import Phrases, Phraser
 from collections import defaultdict
 import multiprocessing
@@ -114,10 +113,3 @@ def train_vectors(sentences):
 
 	print('writing vectors to disk...')
 	model.save('vectors/acl1010.vec') # write model to disk
-
-# load acl1010 vectors
-def load_vectors():
-	print('\n# loading acl1010 vectors')
-	vectors = kv.load('vectors/acl1010.vec', mmap='r')
-	print('loaded %s vectors' % (len(vectors.wv.vocab)))
-	return vectors
