@@ -1,13 +1,12 @@
 # files
 .DS_Store
 
-
 # directories
 .vscode
 
+/layers/data/acl1010
+
 layers/ml/opp-115
 layers/ml/vectors
-layers/ml/corpus_text
-layers/ml/corpus_xml
 
 __pycache__

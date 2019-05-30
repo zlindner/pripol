@@ -16,13 +16,16 @@ def load_google():
 	return vectors
 
 # builds the embedding matrix from vec
-def build_embedding_matrix(vec, dim):
-	vocab = vec.wv.vocab
-	vocab_size = len(vec.wv.vocab) + 1
+def build_embedding_matrix(vectors, dim):
+	vocab = vectors.wv.vocab
+	vocab_size = len(vectors.wv.vocab) + 1
 
 	matrix = np.zeros((vocab_size, dim))
 
 	for i, word in enumerate(vocab):
-		matrix[i] = vec[word]
+		vec = vectors[word]
+
+		if vec is not None:
+			matrix[i] = vec
 
 	return matrix

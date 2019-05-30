@@ -1,7 +1,12 @@
 from glob import glob
 import pandas as pd
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
+
+#import cnn
+#model = cnn.model
 
 # the 10 data practice categories from https://usableprivacy.org/static/files/swilson_acl_2016.pdf
 DATA_PRACTICES = [
@@ -73,6 +78,14 @@ def generate_statistics(annotations):
 
 	print(category_freqs)
 
+# TODO
+def encode_sequences(X_train, X_val):
+	print('encoding text sequences...')
+
+	tokenizer = Tokenizer()
+	print(X_train['pretty_print'].values.tolist()[0])
+	#tokenizer.fit_on_texts(X_train['pretty_print'].tolist())
+
 # splits the dataframe into training and testing subsets 
 def split_train_test(df):
 	print('\n# splitting into training, testing, and validation subsets')
@@ -91,6 +104,10 @@ def split_stratified_kfold(X, y, n):
 	for train_index, val_index in skf.split(X, y):
 		X_train, X_val = X.loc[X.index.intersection(train_index)], X.loc[X.index.intersection(val_index)]
 		y_train, y_val = y.loc[y.index.intersection(train_index)], y.loc[y.index.intersection(val_index)]
+
+		encode_sequences(X_train, X_val)
+
+		#model.fit(X_train, y_train, epochs=10)
 
 annotations = load_annotations()
 pretty_prints = load_pretty_prints()
