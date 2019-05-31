@@ -5,6 +5,8 @@
 .vscode
 __pycache__
 
+/env
+
 /layers/data/acl1010
 /layers/data/google
 /layers/data/opp115
