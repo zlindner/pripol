@@ -3,10 +3,8 @@
 
 # directories
 .vscode
+__pycache__
 
 /layers/data/acl1010
-
-layers/ml/opp-115
-layers/ml/vectors
-
-__pycache__
+/layers/data/google
+/layers/data/opp115
