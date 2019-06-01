@@ -7,6 +7,6 @@ __pycache__
 
 /env
 
-/layers/data/acl1010
-/layers/data/google
-/layers/data/opp115
+/data/acl1010
+/data/google
+/data/opp115

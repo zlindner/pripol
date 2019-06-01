@@ -1,17 +1,10 @@
 import numpy as np
 from gensim.models import KeyedVectors as kv
 
-# loads acl1010 vectors
-def load_acl1010():
-	print('\n# loading acl1010 vectors')
-	vectors = kv.load('../data/acl1010/acl1010.vec', mmap='r')
-	print('loaded %s vectors' % (len(vectors.wv.vocab)))
-	return vectors
-
 # loads google news vectors
 def load_google():
 	print('\n# loading google news vectors')
-	vectors = kv.load_word2vec_format('../data/google/google-news.bin', binary=True)
+	vectors = kv.load_word2vec_format('layers/data/google/google-news.bin', binary=True)
 	print('loaded %s vectors' % (len(vectors.vocab)))
 	return vectors
 
@@ -29,3 +22,5 @@ def build_embedding_matrix(vectors, dim):
 			matrix[i] = vec
 
 	return matrix
+
+load_google()

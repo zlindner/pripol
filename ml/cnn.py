@@ -64,3 +64,13 @@ def build_cnn():
 	return model
 
 model = build_cnn()	
+
+# partitions X into training and validation subsets n times
+def split_stratified_kfold(X, y, n):
+	skf = StratifiedKFold(n_splits=n, random_state=42)
+	
+	for train_index, val_index in skf.split(X, y):
+		X_train, X_val = X.loc[X.index.intersection(train_index)], X.loc[X.index.intersection(val_index)]
+		y_train, y_val = y.loc[y.index.intersection(train_index)], y.loc[y.index.intersection(val_index)]
+
+		encode_sequences(X_train, X_val)
