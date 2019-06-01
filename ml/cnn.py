@@ -1,70 +1,72 @@
-import vectors
-from keras.models import Model
+import numpy as np
+from data.acl1010 import ACL1010
+from data.opp115 import OPP115
 from keras import layers
-from keras.activations import relu
+from keras.models import Model
 
-# TODO Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMAs
-# - should I remove , . from text?
-# - does each embedding require its own embedding layer? -> acl1010 and google
-# - does each n-gram require its own embedding, max-pooling layers?
-# - other statistics to generate?
+class CNN:
 
-vec_acl1010 = vectors.load_acl1010()
-#vec_google = vectors.load_google()
+	# creates and embedding matrix for the given word vectors
+	def build_embedding_matrix(self, vectors, dimension = 300):
+		vocab = vectors.wv.vocab
+		vocab_size = len(vocab) + 1
 
-# builds an embedding layer for the given embedding matrix
-def build_embedding_layer(matrix, max_len, trainable=False):
-	print('building embedding layer')
+		matrix = np.zeros((vocab_size, dimension))
 
-	embed_layer = layers.Embedding(
-		input_dim=matrix.shape[0],
-		output_dim=matrix.shape[1],
-		input_length=max_len,
-		weights=[matrix],
-		trainable=trainable,
-	)
+		for i, word in enumerate(vocab):
+			vec = vectors[word]
 
-	return embed_layer
+			if vec is not None:
+				matrix[i] = vec
+		
+		return matrix
 
-def build_convolutional_pool(x_input, max_len, n_grams=[3, 4, 5], feature_maps=300):
-	print('building convolutional pool...')
+	# creates an embedding layer for the given word vectors
+	def build_embedding_layer(self, vectors, max_seq_len):
+		matrix = self.build_embedding_matrix(vectors)
 
-	pool = []
+		embed = layers.Embedding(
+			input_dim=matrix.shape[0],
+			output_dim=matrix.shape[1],
+			weights=[matrix],
+			input_length=max_seq_len,
+			trainable=False
+		)
 
-	for n in n_grams:
-		branch = layers.Conv1D(filters=feature_maps, kernel_size=n, activation=relu)(x_input)
-		branch = layers.MaxPooling1D(pool_size=max_len - n + 1, strides=None, padding='valid')(branch)
-		branch = layers.Flatten()(branch)
+		return embed
 
-		pool.append(branch)
+	# builds the cnn architecture
+	def build(self, max_seq_len):
+		embed_acl1010 = self.build_embedding_layer(ACL1010().load_vectors(), max_seq_len)
 
-	return pool
+		seq_input = layers.Input(shape=(max_seq_len,), dtype='int32')
+		embed_seq = embed_acl1010(seq_input)
 
-# builds the convolutional neural network architecture
-# TODO get input_length for Embedding layer... padding?
-def build_cnn():
-	print('building cnn architecture...')
-
-	matrix_acl1010 = vectors.build_embedding_matrix(vec_acl1010, 300)
-	embed_acl1010 = build_embedding_layer(matrix_acl1010, 10)
-
-	i = layers.Input(shape=(10,), dtype='int32')
-	x = embed_acl1010(i)
-
-	conv_pool = build_convolutional_pool(x, 10)
-	z = layers.concatenate(conv_pool, axis=-1)
-
-	o = layers.Dense(1, activation='sigmoid')(z)
+		convs = []
+		filter_sizes = [3, 4, 5]
 	
-	model = Model(inputs=i, outputs=o)
-	model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+		for filter_size in filter_sizes:
+			conv = layers.Conv1D(filters=128, kernel_size=filter_size, activation='relu')(embed_seq)
+			pool = layers.MaxPooling1D(pool_size=3)(conv)
+			convs.append(pool)
 
-	print(model.summary())
+		conv = layers.Conv1D(filters=128, kernel_size=3, activation='relu')(embed_seq)
+		pool = layers.MaxPooling1D(pool_size=3)(conv)
 
-	return model
+		x = layers.Dropout(0.5)(pool)
+		x = layers.Flatten()(x)
+		x = layers.Dense(128, activation='relu')(x)
+		x = layers.Dropout(0.5)(x)
 
-model = build_cnn()	
+		output = layers.Dense(len(OPP115.DATA_PRACTICES), activation='sigmoid')(x)
 
+		model = Model(seq_input, output)
+		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
+		
+		print(model.summary())
+
+		return model
+		
 # partitions X into training and validation subsets n times
 def split_stratified_kfold(X, y, n):
 	skf = StratifiedKFold(n_splits=n, random_state=42)

@@ -89,10 +89,14 @@ class OPP115:
 		print('\n# builiding text sequences')
 
 		train, test = self.partition(self.corpus)
+
+		y_train = train.pop('data_practice')
+		y_test = test.pop('data_practice')
+
 		train = train['text'].tolist()
 		test = test['text'].tolist()
 
-		max_sentence_length = max(max([len(sentence.split()) for sentence in train]), max([len(sentence.split()) for sentence in test]))
+		max_seq_len = max(max([len(sentence.split()) for sentence in train]), max([len(sentence.split()) for sentence in test]))
 
 		tokenizer = Tokenizer(oov_token=True)
 		tokenizer.fit_on_texts(train)
@@ -100,9 +104,9 @@ class OPP115:
 		seq_train = tokenizer.texts_to_sequences(train)
 		seq_test = tokenizer.texts_to_sequences(test)
 
-		X_train = pad_sequences(seq_train, maxlen=max_sentence_length, padding='post')
-		X_test = pad_sequences(seq_test, maxlen=max_sentence_length, padding='post')
+		X_train = pad_sequences(seq_train, maxlen=max_seq_len, padding='post')
+		X_test = pad_sequences(seq_test, maxlen=max_seq_len, padding='post')
 
 		vocab_size = len(tokenizer.word_index) + 1
 
-		return X_train, X_test, vocab_size
+		return X_train, X_test, y_train, y_test, max_seq_len
