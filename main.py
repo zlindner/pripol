@@ -1,22 +1,36 @@
 from data.opp115 import OPP115
 from data.acl1010 import ACL1010
 from ml.cnn import CNN
-from keras.utils import to_categorical
-from sklearn.preprocessing import OneHotEncoder
+import pandas as pd
+import numpy as np
+from keras import layers
+from keras.models import Sequential
+from gensim.models import KeyedVectors as kv
+
+EMBEDDING_DIM = 300
 
 opp115 = OPP115()
-X_train, X_test, y_train, y_test, max_seq_len = opp115.build_sequences()
+acl1010 = ACL1010()
 
-#acl1010 = ACL1010()
-#vec_acl1010 = acl1010.load_vectors()
+cnn = CNN(opp115, acl1010)
+model = cnn.build()
+model.fit(opp115.X_train, opp115.y_train, epochs=1, batch_size=1024)
+pred = model.predict(opp115.X_test)
 
-# TODO move to opp115.py
-y_train = y_train.values.reshape(-1, 1)
-enc = OneHotEncoder()
-y_train = enc.fit_transform(y_train).toarray()
+df = pd.DataFrame(columns=['segment'] + opp115.DATA_PRACTICES)
+df['segment'] = opp115.tokenizer.sequences_to_texts(opp115.X_test)
+#df['data_practice'] = opp115.encoder.inverse_transform(opp115.y_test).ravel() # flatten()?
+#df['data_practice'] = np.argmax(opp115.y_test)
+df[opp115.DATA_PRACTICES] = pred
 
-cnn = CNN()
-model = cnn.build(max_seq_len)
-model.fit(X_train, y_train, epochs=2)
+print(df.head(20))
+#df.to_csv('results.csv')
 
-print(model.predict(X_test, batch_size=1024))
+#model.fit(opp115.X_train, opp115.y_train, epochs=1, validation_data=[opp115.X_test, opp115.y_test])
+
+#oss, accuracy = model.evaluate(opp115.X_train, opp115.y_train, verbose=False)
+#print("Training Accuracy: {:.4f}".format(accuracy))
+#loss, accuracy = model.evaluate(opp115.X_test, opp115.y_test, verbose=False)
+#print("Testing Accuracy:  {:.4f}".format(accuracy))
+
+#pred = np.round(pred, 5)
