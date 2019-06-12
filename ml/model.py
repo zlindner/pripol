@@ -7,6 +7,7 @@ from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score
 from sklearn.model_selection import KFold, cross_validate
 from sklearn.exceptions import UndefinedMetricWarning
 
+# superclass for sklearn models
 class Model():
 
 	def __init__(self, opp115):
@@ -37,7 +38,7 @@ class Model():
 	def get_name(self):
 		raise NotImplementedError
 
-	# perform 10-fold cross validation
+	# perform 10-fold cross validation for each data practice
 	def kfold(self):
 		for data_practice in self.opp115.data_practices:
 			print('\n--- %s ---\n' % data_practice.upper())

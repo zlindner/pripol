@@ -15,36 +15,36 @@ from sklearn.metrics import accuracy_score
 class OPP115:
 
 	def __init__(self):
-		print('\n# OPP-115')
+		print('\n# OPP-115\n')
 
 		self.stats = {
 			'documents': -1,
-			'classes': -1,
+			'classes': 10,
 			'total_segments': -1,
 			'total_words': -1,
 			'cleaned_words': -1,
 			'data_practices': [],
+			'consolidated_data_practices': []
 		}
 
 		self.annotations = self.load_annotations()
+		self.stats['data_practices'] = self.annotations['data_practice'].value_counts()
+
 		self.policies = self.load_policies()
 		self.linked = self.link()
 
 		self.consolidated = self.consolidate()
+		self.stats['total_words'] = self.consolidated['segment'].apply(lambda x: len(x.split(' '))).sum()
+
 		self.consolidated['segment'] = self.consolidated['segment'].apply(utils.remove_html)
 		self.consolidated['segment'] = self.consolidated['segment'].apply(utils.clean)
+		self.stats['cleaned_words'] = self.consolidated['segment'].apply(lambda x: len(x.split(' '))).sum()
 
 		self.encoded = self.encode()
 
 		self.data_practices = ['other', 'policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion']
 		
-		#self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.consolidated['segment'], self.encoded[data_practices].values, test_size=0.3, random_state=42)
-
-		#opp115 = self.load()
-		#opp115['segment'] = opp115['segment'].apply(utils.clean)
-		#self.stats['cleaned_words'] = opp115['segment'].apply(lambda x: len(x.split(' '))).sum()
-		#self.x_train, self.x_test, self.y_train, self.y_test = self.split(opp115, 0.35)
-
+		self.stats['consolidated_data_practices'] = self.consolidated['data_practice'].value_counts()
 	#
 	def load_annotations(self):
 		print('loading annotations...')
@@ -61,6 +61,8 @@ class OPP115:
 		df.reset_index(inplace=True, drop=True)
 
 		print('loaded %s annotations' % df.shape[0])
+
+		self.stats['documents'] = len(annotations)
 
 		return df
 
@@ -84,6 +86,8 @@ class OPP115:
 
 		df = pd.concat(policies)
 		df.reset_index(inplace=True, drop=True)
+
+		self.stats['total_segments'] = df.shape[0]
 
 		print('loaded %s segments' % df.shape[0])
 
@@ -136,6 +140,7 @@ class OPP115:
 		print('Number of words: %s' % self.stats['total_words'])
 		print('Number of words after cleaning: %s' % self.stats['cleaned_words'])
 		print('Data practice distribution:\n%s\n' % self.stats['data_practices'])
+		print('Consolidated data practice distribution:\n%s\n' % self.stats['consolidated_data_practices'])
 
 #y_train = np.argmax(opp115.y_train, axis=1)
 #y_test = np.argmax(opp115.y_test, axis=1)
