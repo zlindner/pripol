@@ -1,138 +1,152 @@
 import re
 import pandas as pd
 import numpy as np
+import data.utils as utils
+
 from glob import glob
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score
 
-from keras.utils import to_categorical
-
-# TODO load unconsolidated annotations, compare predicition accuracy?
-# TODO load pretty print?
 class OPP115:
 
-	DATA_PRACTICES = [
-		'First Party Collection/Use',
-		'Third Party Sharing/Collection',
-		'User Choice/Control',
-		'User Access, Edit, & Deletion',
-		'Data Retention',
-		'Data Security',
-		'Policy Change',
-		'Do Not Track',
-		'International & Specific Audiences',
-		'Other'
-	]
-
 	def __init__(self):
-		self.consolidated = self.load_consolidated(0.5)
-		self.X_train, self.X_test, self.y_train, self.y_test = self.build_sequences()
+		print('\n# OPP-115')
 
-	# load consolidated annotations with overlap similarities of 0.5, 0.75, or 1.0
-	def load_consolidated(self, threshold):
-		if threshold != 0.5 and threshold != 0.75 and threshold != 1.0:
-			print('error loading consolidations with threshold of %s' % threshold)
-			return
+		self.stats = {
+			'documents': -1,
+			'classes': -1,
+			'total_segments': -1,
+			'total_words': -1,
+			'cleaned_words': -1,
+			'data_practices': [],
+		}
 
-		print('\n# loading consolidations with threshold %s...' % threshold)
+		self.annotations = self.load_annotations()
+		self.policies = self.load_policies()
+		self.linked = self.link()
 
-		consolidated = []
+		self.consolidated = self.consolidate()
+		self.consolidated['segment'] = self.consolidated['segment'].apply(utils.remove_html)
+		self.consolidated['segment'] = self.consolidated['segment'].apply(utils.clean)
 
-		for filename in glob('data/opp115/consolidation/threshold-' + str(threshold) + '-overlap-similarity/*.csv'):
-			consol = pd.read_csv(filename, sep=',', header=None, names=['annotation_id', 'batch_id', 'annotator_id', 'policy_id', 'segment_id', 'data_practice', 'attributes', 'date', 'url'])
-			consol.drop(['policy_id', 'date', 'url'], axis=1, inplace=True) # remove extra columns
-			
-			filename_policy = filename[60:-4] if threshold == 0.75 else filename[59:-4] # threshold of 0.75 has extra character in filename
-			policy = self.load_policy(filename_policy) # load policy corresponding to annotations
-			
-			merged = pd.merge(consol, policy, on='segment_id') # merge each annotation with its corresponding segment in the policy text
-			
-			consolidated.append(merged)
+		self.encoded = self.encode()
 
-		df = pd.concat(consolidated)
-		df.reset_index(inplace=True)
+		self.data_practices = ['other', 'policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion']
 		
-		print('loaded %s annotations for %s privacy policies' % (df.shape[0], len(consolidated)))
+		#self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.consolidated['segment'], self.encoded[data_practices].values, test_size=0.3, random_state=42)
+
+		#opp115 = self.load()
+		#opp115['segment'] = opp115['segment'].apply(utils.clean)
+		#self.stats['cleaned_words'] = opp115['segment'].apply(lambda x: len(x.split(' '))).sum()
+		#self.x_train, self.x_test, self.y_train, self.y_test = self.split(opp115, 0.35)
+
+	#
+	def load_annotations(self):
+		print('loading annotations...')
+
+		annotations = []
+
+		for filename in glob('data/opp115/annotations/*.csv'):
+			df = pd.read_csv(filename, sep=',', header=None, names=['annotation_id', 'batch_id', 'annotator_id', 'policy_id', 'segment_id', 'data_practice', 'attributes', 'date', 'url'])
+			df.drop(['annotation_id', 'batch_id', 'annotator_id', 'date', 'url'], axis=1, inplace=True)
+			df['policy_id'] = filename[24:-4].split('_')[0]
+			annotations.append(df)
+
+		df = pd.concat(annotations)
+		df.reset_index(inplace=True, drop=True)
+
+		print('loaded %s annotations' % df.shape[0])
 
 		return df
 
-	# loads the sanitized policy for the given filename, splitting it into clean segments
-	def load_policy(self, filename):
+	#
+	def load_policies(self):
+		print('loading policies...')
+
 		policies = []
+
+		for filename in glob('data/opp115/sanitized_policies/*.html'):
+			with open(filename, 'r') as f:
+				policy = f.read()
+				segments = policy.split('|||')
+
+				df = pd.DataFrame(columns=['policy_id', 'segment_id', 'segment'])
+				df['segment_id'] = np.arange(0, len(segments))
+				df['segment'] = segments
+				df['policy_id'] = filename[31:-5].split('_')[0]
+
+				policies.append(df)
+
+		df = pd.concat(policies)
+		df.reset_index(inplace=True, drop=True)
+
+		print('loaded %s segments' % df.shape[0])
+
+		return df		
+
+	#
+	def link(self):
+		print('linking annotations with segments...')
+
+		return pd.merge(self.annotations, self.policies, on=['policy_id', 'segment_id'], how='outer')
+
+	#
+	def consolidate(self):
+		print('consolidating annotations...')
+
+		consolidated = self.linked.groupby(['policy_id', 'segment_id']).agg(lambda x: x.value_counts().index[0])
+		consolidated.reset_index(inplace=True)
+		return consolidated
+
+	#
+	def encode(self):
+		data_practices = {
+			'Other': 'other',
+			'Policy Change': 'policy_change',
+			'First Party Collection/Use': 'first_party_collection_use',
+			'Third Party Sharing/Collection': 'third_party_sharing_collection',
+			'Do Not Track': 'do_not_track',
+			'User Choice/Control': 'user_choice_control',
+			'International and Specific Audiences': 'international_specific_audiences',
+			'Data Security': 'data_security',
+			'Data Retention': 'data_retention',
+			'User Access, Edit and Deletion': 'user_access_edit_deletion'
+		}
+
+		encoded = pd.DataFrame({'policy_id': self.consolidated['policy_id'], 'segment_id': self.consolidated['segment_id']})
+
+		for data_practice in data_practices:
+			one_hot = lambda x: 1 if x.startswith(data_practice) else 0
+			encoded[data_practices[data_practice]] = self.consolidated['data_practice'].apply(one_hot)
+
+		return encoded
+
+	# displays various statistics about the opp115 dataset
+	def display_statistics(self):
+		print('\n# opp115 statistics')
 		
-		with open('data/opp115/sanitized_policies/' + filename + '.html', 'r') as f:
-			html = f.read() # sanitized policy
-			
-			policy = re.sub(r'<.*?>', '', html) # remove html tags
-			policy = self.clean(policy)
-					
-			segments = policy.split('|||')
+		print('Total documents: %s' % self.stats['documents'])
+		print('Number of classes: %s' % self.stats['classes'])
+		print('Number of segments: %s' % self.stats['total_segments'])
+		print('Number of words: %s' % self.stats['total_words'])
+		print('Number of words after cleaning: %s' % self.stats['cleaned_words'])
+		print('Data practice distribution:\n%s\n' % self.stats['data_practices'])
 
-			df = pd.DataFrame(columns=['segment_id', 'segment'])
-			df['segment_id'] = np.arange(0, len(segments))
-			df['segment'] = segments
+#y_train = np.argmax(opp115.y_train, axis=1)
+#y_test = np.argmax(opp115.y_test, axis=1)
 
-			return df
-	
-	# cleans the passed text
-	def clean(self, text):
-		text = ' '.join(text.split()) # remove extra whitespaces
-		text = re.sub(r'[\(\)\[\]\{\}\;\:\`\"\“\”]', '', text) # remove punctuation
-		text.replace(r'http\S+', '')
-		text.replace(r'http', '')
-		text.replace(r'@\S+', '')
-		text.replace(r'@', 'at')
-		text = text.lower()
+#nb.fit(opp115.x_train, opp115.y_train)
 
-		return text
+#print(opp115.y_test.value_counts())
+#y_pred = nb.predict(opp115.x_test)
 
-	# partitions the annotations into training and testing subsets TODO stratified kfold on training set
-	def partition(self, annotations):
-		X = annotations['segment'].values
-		y = annotations['data_practice'].values
+#data_practices = ['other', 'policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion']
 
-		X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.0766, random_state=42, stratify=annotations[['data_practice']])
-
-		return X_train, X_test, y_train, y_test
-
-	#
-	def encode_labels(self, labels):
-		enc = LabelEncoder()
-		y = enc.fit_transform(labels)
-
-		#self.encoder = OneHotEncoder(sparse=False)
-		#y = labels.reshape((-1, 1))
-		#y = self.encoder.fit_transform(y)
-
-		y = to_categorical(y)
-
-		return y
-
-	#
-	def build_sequences(self):
-		print('\n# building text sequences')
-
-		# 
-		X_train, X_test, y_train, y_test = self.partition(self.consolidated)
-		self.max_seq_len = max(max([len(sentence.split()) for sentence in X_train]), max([len(sentence.split()) for sentence in X_test]))
-
-		#
-		y_train = self.encode_labels(y_train)
-		y_test = self.encode_labels(y_test)
-
-		# 
-		self.tokenizer = Tokenizer()
-		self.tokenizer.fit_on_texts(X_train)
-
-		self.vocab = self.tokenizer.word_index
-		self.vocab_size = len(self.tokenizer.word_index) + 1
-
-		X_train = self.tokenizer.texts_to_sequences(X_train)
-		X_test = self.tokenizer.texts_to_sequences(X_test)
-
-		X_train = pad_sequences(X_train, maxlen=self.max_seq_len, padding='post')
-		X_test = pad_sequences(X_test, maxlen=self.max_seq_len, padding='post')
-
-		return X_train, X_test, y_train, y_test
+#print('accuracy %s' % accuracy_score(y_pred, opp115.y_test))
+#print(classification_report(opp115.y_test, y_pred))
+#print(confusion_matrix(opp115.y_test, y_pred))
