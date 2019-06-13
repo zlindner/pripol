@@ -4,13 +4,8 @@ import numpy as np
 import data.utils as utils
 
 from glob import glob
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.metrics import accuracy_score
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
 
 class OPP115:
 
@@ -38,6 +33,10 @@ class OPP115:
 
 		self.consolidated['segment'] = self.consolidated['segment'].apply(utils.remove_html)
 		self.consolidated['segment'] = self.consolidated['segment'].apply(utils.clean)
+
+		stemmer = PorterStemmer()
+		self.consolidated['segment'] = self.consolidated['segment'].apply(lambda x: ' '.join([stemmer.stem(word) for word in word_tokenize(x)])) 
+
 		self.stats['cleaned_words'] = self.consolidated['segment'].apply(lambda x: len(x.split(' '))).sum()
 
 		self.encoded = self.encode()
@@ -141,17 +140,4 @@ class OPP115:
 		print('Number of words after cleaning: %s' % self.stats['cleaned_words'])
 		print('Data practice distribution:\n%s\n' % self.stats['data_practices'])
 		print('Consolidated data practice distribution:\n%s\n' % self.stats['consolidated_data_practices'])
-
-#y_train = np.argmax(opp115.y_train, axis=1)
-#y_test = np.argmax(opp115.y_test, axis=1)
-
-#nb.fit(opp115.x_train, opp115.y_train)
-
-#print(opp115.y_test.value_counts())
-#y_pred = nb.predict(opp115.x_test)
-
-#data_practices = ['other', 'policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion']
-
-#print('accuracy %s' % accuracy_score(y_pred, opp115.y_test))
-#print(classification_report(opp115.y_test, y_pred))
-#print(confusion_matrix(opp115.y_test, y_pred))
+			

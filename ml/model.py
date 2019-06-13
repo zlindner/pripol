@@ -74,10 +74,11 @@ class Model():
 
 		self.display_results(results, strategy_name)
 
-	# basic train / test subset splitting
+	# basic train / test subset splitting TODO needed?
 	def train_test(self):
 		pass
 
+	# tune hyperparameters for model
 	def tune_hyperparameters(self, strategy_name):
 		if strategy_name == 'basic':
 			strategy = self.train_test()
@@ -89,14 +90,9 @@ class Model():
 			print('Incorrect cross_validate strategy supplied, options include basic, kfold, stratified_kfold')
 			return
 
-		params = [{
-			'classifier__alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 5.0, 10.0],
-			'classifier__max_iter': [100, 250, 500, 1000, 2000],
-			'classifier__tol': [None, 0.001, 0.01, 0.1, 1.0],
-			'classifier__shuffle': [True, False]
-		}]
+		print('tuning hyperparameters...')
 
-		clf = GridSearchCV(self.model, params, cv=strategy)
+		clf = GridSearchCV(self.model, self.params, cv=strategy)
 
 		for data_practice in self.opp115.data_practices:
 			target = self.opp115.encoded[['policy_id', 'segment_id', data_practice]]
@@ -109,9 +105,9 @@ class Model():
 			print('best parameters set found on development set')
 			print(clf.best_params_)
 
-			break
+			break # ???
 
-	#
+	# displays metrics (precision, recall, f) from cross validation
 	def display_results(self, results, strategy_name):
 		print('\n%s' % strategy_name)
 
