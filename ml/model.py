@@ -4,7 +4,7 @@ import warnings
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, confusion_matrix
-from sklearn.model_selection import KFold, cross_validate
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_validate, GridSearchCV
 from sklearn.exceptions import UndefinedMetricWarning
 
 # superclass for sklearn models
@@ -31,6 +31,9 @@ class Model():
 			'fn': make_scorer(self.fn)
 		}
 
+		self.kfold = KFold(n_splits=10, random_state=42)
+		self.stratified_kfold = StratifiedKFold(n_splits=10, random_state=42)
+
 		# disable UndefinedMetricWarning
 		warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
 
@@ -38,41 +41,93 @@ class Model():
 	def get_name(self):
 		raise NotImplementedError
 
-	# perform 10-fold cross validation for each data practice
-	def kfold(self):
-		for data_practice in self.opp115.data_practices:
-			print('\n--- %s ---\n' % data_practice.upper())
+	def cross_validate(self, strategy_name):
+		if strategy_name == 'basic':
+			strategy = self.train_test()
+		elif strategy_name == 'kfold':
+			strategy = self.kfold
+		elif strategy_name == 'stratified_kfold':
+			strategy = self.stratified_kfold
+		else:
+			print('Incorrect cross_validate strategy supplied, options include basic, kfold, stratified_kfold')
+			return
 
+		results = {}
+
+		for data_practice in self.opp115.data_practices:
 			target = self.opp115.encoded[['policy_id', 'segment_id', data_practice]]
 			target = self.opp115.consolidated.merge(target, on=['policy_id', 'segment_id']).drop_duplicates()
 			x = target['segment']
 			y = target[data_practice]
 
-			kf = KFold(n_splits=10, random_state=42)
+			scores = cross_validate(estimator=self.model, X=x, y=y, cv=strategy, scoring=self.metrics)
 
-			results = cross_validate(estimator=self.model, X=x, y=y, cv=kf, scoring=self.metrics)
+			results[data_practice] = {
+				'precision': round(np.mean(scores['test_precision']), 2),
+				'recall': round(np.mean(scores['test_recall']), 2),
+				'f1': round(np.mean(scores['test_f1']), 2),
 
-			self.display_metrics(results)
+				'fold_precision': scores['test_precision'],
+				'fold_recall': scores['test_recall'],
+				'fold_f1': scores['test_f1'],
+			}
 
-	# displays various metrics for kfold cross validation
-	def display_metrics(self, results):
-		# display headers
-		for i, d in enumerate([list(self.metrics.keys())]):
-			line = '|'.join(str(x).ljust(12) for x in d)
-			print('\t|' + line)
+		self.display_results(results, strategy_name)
+
+	# basic train / test subset splitting
+	def train_test(self):
+		pass
+
+	def tune_hyperparameters(self, strategy_name):
+		if strategy_name == 'basic':
+			strategy = self.train_test()
+		elif strategy_name == 'kfold':
+			strategy = self.kfold
+		elif strategy_name == 'stratified_kfold':
+			strategy = self.stratified_kfold
+		else:
+			print('Incorrect cross_validate strategy supplied, options include basic, kfold, stratified_kfold')
+			return
+
+		params = [{
+			'classifier__alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 5.0, 10.0],
+			'classifier__max_iter': [100, 250, 500, 1000, 2000],
+			'classifier__tol': [None, 0.001, 0.01, 0.1, 1.0],
+			'classifier__shuffle': [True, False]
+		}]
+
+		clf = GridSearchCV(self.model, params, cv=strategy)
+
+		for data_practice in self.opp115.data_practices:
+			target = self.opp115.encoded[['policy_id', 'segment_id', data_practice]]
+			target = self.opp115.consolidated.merge(target, on=['policy_id', 'segment_id']).drop_duplicates()
+			x = target['segment']
+			y = target[data_practice]
+
+			clf.fit(x, y)
+
+			print('best parameters set found on development set')
+			print(clf.best_params_)
+
+			break
+
+	#
+	def display_results(self, results, strategy_name):
+		print('\n%s' % strategy_name)
+
+		headers = ['data_practice', 'precision', 'recall', 'f1']
+		data_practices = list(results.keys())
+		precision = [list(results[x].values())[0] for x in results]
+		recall = [list(results[x].values())[1] for x in results]
+		f1 = [list(results[x].values())[2] for x in results]
+
+		data = [headers] + list(zip(data_practices, precision, recall, f1))
+
+		for i, d in enumerate(data):
+			line = '|'.join(str(x).ljust(32) for x in d)
+			print(line)
 			if i == 0:
 				print('-' * len(line))
-
-		# display metrics for each fold 
-		for i in range(0, 10):
-			fold_results = [results['test_' + metric][i] for metric in self.metrics.keys()]
-			line = '|'.join(str(round(x, 4)).ljust(12) for x in fold_results)
-			print('fold %s\t|%s' % ((i + 1), line))
-
-		# display mean for each metric not including confusion matrix
-		mean = [np.mean(results['test_precision']), np.mean(results['test_recall']), np.mean(results['test_f1']), np.mean(results['test_f1_micro']), np.mean(results['test_f1_macro'])]
-		line = '|'.join(str(round(x, 4)).ljust(12) for x in mean)
-		print('mean\t|%s' % line)
 
 	# true positive metric
 	def tp(self, y_true, y_pred): 
