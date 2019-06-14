@@ -14,7 +14,8 @@ class Model():
 		print('\n# %s' % self.get_name())
 
 		self.opp115 = opp115
-		self.labels = ['policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion', 'introductory_generic', 'privacy_contact_information', 'practice_not_covered']
+		self.labels = ['first_party_collection_use', 'third_party_sharing_collection', 'introductory_generic', 'user_choice_control', 'international_specific_audiences', 'data_security', 'privacy_contact_information', 'user_access_edit_deletion', 'practice_not_covered', 'policy_change', 'data_retention', 'do_not_track']
+		#self.labels = ['policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion', 'introductory_generic', 'privacy_contact_information', 'practice_not_covered']
 
 		# initialize model
 		self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', self.classifier)])
