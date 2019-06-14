@@ -14,6 +14,7 @@ class Model():
 		print('\n# %s' % self.get_name())
 
 		self.opp115 = opp115
+		self.labels = ['policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion', 'introductory_generic', 'privacy_contact_information', 'practice_not_covered']
 
 		# initialize model
 		self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', self.classifier)])
@@ -54,22 +55,30 @@ class Model():
 
 		results = {}
 
-		for data_practice in self.opp115.data_practices:
-			target = self.opp115.encoded[['policy_id', 'segment_id', data_practice]]
+		for label in self.labels:
+			target = self.opp115.encoded[['policy_id', 'segment_id', label]]
 			target = self.opp115.consolidated.merge(target, on=['policy_id', 'segment_id']).drop_duplicates()
 			x = target['segment']
-			y = target[data_practice]
+			y = target[label]
 
 			scores = cross_validate(estimator=self.model, X=x, y=y, cv=strategy, scoring=self.metrics)
 
-			results[data_practice] = {
+			results[label] = {
 				'precision': round(np.mean(scores['test_precision']), 2),
 				'recall': round(np.mean(scores['test_recall']), 2),
 				'f1': round(np.mean(scores['test_f1']), 2),
+				'tp': sum(scores['test_tp']),
+				'tn': sum(scores['test_tn']),
+				'fp': sum(scores['test_fp']),
+				'fn': sum(scores['test_fn']),
 
 				'fold_precision': scores['test_precision'],
 				'fold_recall': scores['test_recall'],
 				'fold_f1': scores['test_f1'],
+				'fold_tp': scores['test_tp'],
+				'fold_tn': scores['test_tn'],
+				'fold_fp': scores['test_fp'],
+				'fold_fn': scores['test_fn']
 			}
 
 		self.display_results(results, strategy_name)
@@ -94,11 +103,11 @@ class Model():
 
 		clf = GridSearchCV(self.model, self.params, cv=strategy)
 
-		for data_practice in self.opp115.data_practices:
-			target = self.opp115.encoded[['policy_id', 'segment_id', data_practice]]
+		for label in self.labels:
+			target = self.opp115.encoded[['policy_id', 'segment_id', label]]
 			target = self.opp115.consolidated.merge(target, on=['policy_id', 'segment_id']).drop_duplicates()
 			x = target['segment']
-			y = target[data_practice]
+			y = target[label]
 
 			clf.fit(x, y)
 
@@ -111,19 +120,34 @@ class Model():
 	def display_results(self, results, strategy_name):
 		print('\n%s' % strategy_name)
 
-		headers = ['data_practice', 'precision', 'recall', 'f1']
-		data_practices = list(results.keys())
-		precision = [list(results[x].values())[0] for x in results]
-		recall = [list(results[x].values())[1] for x in results]
-		f1 = [list(results[x].values())[2] for x in results]
+		micro_precision, micro_recall, micro_f = self.calc_micro(results)
 
-		data = [headers] + list(zip(data_practices, precision, recall, f1))
+		headers = ['label', 'precision', 'recall', 'f1']
+		labels = list(results.keys()) + ['micro']
+		precision = [list(results[x].values())[0] for x in results] + [micro_precision]
+		recall = [list(results[x].values())[1] for x in results] + [micro_recall]
+		f1 = [list(results[x].values())[2] for x in results] + [micro_f]
+
+		data = [headers] + list(zip(labels, precision, recall, f1))
 
 		for i, d in enumerate(data):
 			line = '|'.join(str(x).ljust(32) for x in d)
 			print(line)
 			if i == 0:
 				print('-' * len(line))
+
+	# calculates micro average for precision, recall, and f between data practices
+	def calc_micro(self, results):
+		tp = [list(results[x].values())[3] for x in results]
+		tn = [list(results[x].values())[4] for x in results]
+		fp = [list(results[x].values())[5] for x in results]
+		fn = [list(results[x].values())[6] for x in results]
+
+		micro_precision = sum(tp) / (sum(tp) + sum(fp))
+		micro_recall = sum(tp) / (sum(tp) + sum(fn))
+		micro_f = 2 * (micro_precision * micro_recall / (micro_precision + micro_recall))
+
+		return round(micro_precision, 2), round(micro_recall, 2), round(micro_f, 2)
 
 	# true positive metric
 	def tp(self, y_true, y_pred): 
