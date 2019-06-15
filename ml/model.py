@@ -1,11 +1,9 @@
 import numpy as np
-import warnings
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_validate, GridSearchCV
-from sklearn.exceptions import UndefinedMetricWarning
 
 # superclass for sklearn models
 class Model():
@@ -15,7 +13,6 @@ class Model():
 
 		self.opp115 = opp115
 		self.labels = ['first_party_collection_use', 'third_party_sharing_collection', 'introductory_generic', 'user_choice_control', 'international_specific_audiences', 'data_security', 'privacy_contact_information', 'user_access_edit_deletion', 'practice_not_covered', 'policy_change', 'data_retention', 'do_not_track']
-		#self.labels = ['policy_change', 'first_party_collection_use', 'third_party_sharing_collection', 'do_not_track', 'user_choice_control', 'international_specific_audiences', 'data_security', 'data_retention', 'user_access_edit_deletion', 'introductory_generic', 'privacy_contact_information', 'practice_not_covered']
 
 		# initialize model
 		self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', self.classifier)])
@@ -36,9 +33,6 @@ class Model():
 		self.kfold = KFold(n_splits=10, random_state=42)
 		self.stratified_kfold = StratifiedKFold(n_splits=10, random_state=42)
 
-		# disable UndefinedMetricWarning
-		warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
-
 	# returns the name of the model
 	def get_name(self):
 		raise NotImplementedError
@@ -57,10 +51,10 @@ class Model():
 		results = {}
 
 		for label in self.labels:
-			target = self.opp115.encoded[['policy_id', 'segment_id', label]]
-			target = self.opp115.consolidated.merge(target, on=['policy_id', 'segment_id']).drop_duplicates()
-			x = target['segment']
-			y = target[label]
+			df = self.opp115.encoded[['policy_id', 'segment_id', label]]
+			df = self.opp115.consolidated.merge(df, on=['policy_id', 'segment_id']).drop_duplicates()
+			x = df['segment']
+			y = df[label]
 
 			scores = cross_validate(estimator=self.model, X=x, y=y, cv=strategy, scoring=self.metrics)
 
