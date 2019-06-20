@@ -1,181 +1,157 @@
+import time
 import numpy as np
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, RandomizedSearchCV
+from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, confusion_matrix, multilabel_confusion_matrix, classification_report, precision_recall_fscore_support
 
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
-from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, confusion_matrix
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_validate, GridSearchCV
-
-# superclass for sklearn models
 class Model():
 
-	def __init__(self, opp115):
-		print('\n# %s' % self.get_name())
+	LABELS = [
+			'first_party_collection_use',
+			'third_party_sharing_collection', 
+			'introductory_generic', 
+			'user_choice_control', 
+			'international_specific_audiences', 
+			'data_security', 
+			'privacy_contact_information', 
+			'user_access_edit_deletion', 
+			'practice_not_covered', 
+			'policy_change', 
+			'data_retention', 
+			'do_not_track'
+	]
 
-		self.opp115 = opp115
-		self.labels = ['first_party_collection_use', 'third_party_sharing_collection', 'introductory_generic', 'user_choice_control', 'international_specific_audiences', 'data_security', 'privacy_contact_information', 'user_access_edit_deletion', 'practice_not_covered', 'policy_change', 'data_retention', 'do_not_track']
+	def __init__(self, x, y):	
+		self.binary = None # TODO needded?
 
-		# initialize model
-		self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', self.classifier)])
+		x, x_test, y, y_test = self.create_test_set(x, y)
 
-		# initialize metrics
-		self.metrics = {
-			'precision': make_scorer(precision_score),
-			'recall': make_scorer(recall_score),
-			'f1': make_scorer(f1_score),
-			'f1_micro': make_scorer(f1_score),
-			'f1_macro': make_scorer(f1_score),
-			'tp': make_scorer(self.tp),
-			'tn': make_scorer(self.tn),
-			'fp': make_scorer(self.fp),
-			'fn': make_scorer(self.fn)
+		model = self.create()
+
+		skf = StratifiedKFold(n_splits=10, random_state=42)
+		fold = 1
+		
+		results = {
+			
 		}
 
-		self.kfold = KFold(n_splits=10, random_state=42)
-		self.stratified_kfold = StratifiedKFold(n_splits=10, random_state=42)
+		for train, test in skf.split(x, y):
+			print('fold %s: ' % fold, end='', flush=True)
+			fold += 1
 
-	# returns the name of the model
-	def get_name(self):
+			start = time.time()
+			
+			x_train, x_test = x[train], x[test]
+			y_train, y_true = y[train], y[test]
+
+			print('training... ', end='', flush=True)
+			self.train(model, x_train, y_train)
+
+			print('predicting... ', end='', flush=True)
+			y_pred = self.predict(model, x_test)
+
+			# TODO calculations for binary classifier
+			mcm = multilabel_confusion_matrix(y_true, y_pred)
+			
+			tn = mcm[:, 0, 0]
+			tp = mcm[:, 1, 1]
+			fn = mcm[:, 1, 0]
+			fp = mcm[:, 0, 1]
+
+			precision = self.precision(tp, fp)
+			recall = self.recall(tp, fn)
+			f = self.f(precision, recall)
+			
+			end = time.time()
+			elapsed = str(np.round(end - start, 2))
+
+			print('finished in %ss' % elapsed)
+
+		print(results)
+
+	# defines and creates the model
+	def create(self):
 		raise NotImplementedError
 
-	def cross_validate(self, strategy_name):
-		if strategy_name == 'basic':
-			strategy = self.train_test()
-		elif strategy_name == 'kfold':
-			strategy = self.kfold
-		elif strategy_name == 'stratified_kfold':
-			strategy = self.stratified_kfold
-		else:
-			print('Incorrect cross_validate strategy supplied, options include basic, kfold, stratified_kfold')
-			return
+	# trains the model
+	def train(self, model, x_train, y_train):
+		model.fit(x_train, y_train, batch_size=self.batch_size, epochs=self.epochs, verbose=0)
 
-		results = {}
+	# TODO comment
+	def predict(self, model, x_test):
+		return model.predict(x_test)
 
-		for label in self.labels:
-			df = self.opp115.encoded[['policy_id', 'segment_id', label]]
-			df = self.opp115.consolidated.merge(df, on=['policy_id', 'segment_id']).drop_duplicates()
-			x = df['segment']
-			y = df[label]
+	# tunes the model's hyperparameters
+	def tune(self):
+		raise NotImplementedError
 
-			scores = cross_validate(estimator=self.model, X=x, y=y, cv=strategy, scoring=self.metrics)
+	# evalutates the model by cross validation 
+	def evaluate(self, model, x, y, metrics):
+		scores = cross_validate(estimator=model, X=x, y=y, cv=10, scoring=metrics)
 
-			results[label] = {
-				'precision': round(np.mean(scores['test_precision']), 2),
-				'recall': round(np.mean(scores['test_recall']), 2),
-				'f1': round(np.mean(scores['test_f1']), 2),
-				'tp': sum(scores['test_tp']),
-				'tn': sum(scores['test_tn']),
-				'fp': sum(scores['test_fp']),
-				'fn': sum(scores['test_fn']),
+		print(scores)
 
-				'fold_precision': scores['test_precision'],
-				'fold_recall': scores['test_recall'],
-				'fold_f1': scores['test_f1'],
-				'fold_tp': scores['test_tp'],
-				'fold_tn': scores['test_tn'],
-				'fold_fp': scores['test_fp'],
-				'fold_fn': scores['test_fn']
-			}
+		results = {
+			'precision': round(np.mean(scores['test_precision']), 2),
+			'recall': round(np.mean(scores['test_recall']), 2),
+			'f1': round(np.mean(scores['test_f1']), 2),
+		}
 
-		self.display_results(results, strategy_name)
+		return results
 
-	# basic train / test subset splitting TODO needed?
-	def train_test(self):
-		pass
+	# creates traing and testing subsets by stratified random sampling
+	def create_test_set(self, x, y):
+		return train_test_split(x, y, test_size=0.1, random_state=42, stratify=y)
 
-	# tune hyperparameters for model
-	def tune_hyperparameters(self, strategy_name):
-		if strategy_name == 'basic':
-			strategy = self.train_test()
-		elif strategy_name == 'kfold':
-			strategy = self.kfold
-		elif strategy_name == 'stratified_kfold':
-			strategy = self.stratified_kfold
-		else:
-			print('Incorrect cross_validate strategy supplied, options include basic, kfold, stratified_kfold')
-			return
+	def precision(self, tp, fp):
+		'''Calculates the precision score(s) for a confusion matrix
 
-		print('tuning hyperparameters...')
+		Args:
+			tp: number of true positive predictions
+			fp: number of false positive predicitions
 
-		clf = GridSearchCV(self.model, self.params, cv=strategy)
+		Returns:
+			The precision score(s) for the confusion matrix 
+		'''
 
-		for label in self.labels:
-			target = self.opp115.encoded[['policy_id', 'segment_id', label]]
-			target = self.opp115.consolidated.merge(target, on=['policy_id', 'segment_id']).drop_duplicates()
-			x = target['segment']
-			y = target[label]
+		with np.errstate(divide='ignore', invalid='ignore'):
+			p = np.true_divide(tp, tp + fp)
+			p[p == np.inf] = 0
+			p = np.nan_to_num(p)
 
-			clf.fit(x, y)
+			return p
 
-			print('best parameters set found on development set')
-			print(clf.best_params_)
+	def recall(self, tp, fn):
+		'''Calculates the recall score(s) for a confusion matrix
 
-			break # ???
+		Args:
+			tp: number of true positive predictions
+			fn: number of false negative predicitions
 
-	# displays metrics (precision, recall, f) from cross validation
-	def display_results(self, results, strategy_name):
-		print('\n%s' % strategy_name)
+		Returns:
+			The recall score(s) for the confusion matrix 
+		'''
 
-		micro_precision, micro_recall, micro_f = self.calc_micro(results)
+		with np.errstate(divide='ignore', invalid='ignore'):
+			r = np.true_divide(tp, tp + fn)
+			r[r == np.inf] = 0
+			r = np.nan_to_num(r)
 
-		headers = ['label', 'precision', 'recall', 'f1']
-		labels = list(results.keys()) + ['micro']
-		precision = [list(results[x].values())[0] for x in results] + [micro_precision]
-		recall = [list(results[x].values())[1] for x in results] + [micro_recall]
-		f1 = [list(results[x].values())[2] for x in results] + [micro_f]
+			return r
 
-		data = [headers] + list(zip(labels, precision, recall, f1))
+	def f(self, precision, recall):
+		'''Calculates the f score(s) for a confusion matrix
 
-		for i, d in enumerate(data):
-			line = '|'.join(str(x).ljust(32) for x in d)
-			print(line)
-			if i == 0:
-				print('-' * len(line))
+		Args:
+			precision: the precision score(s)
+			recall: the recall score(s)
 
-	# calculates micro average for precision, recall, and f between data practices
-	def calc_micro(self, results):
-		tp = [list(results[x].values())[3] for x in results]
-		tn = [list(results[x].values())[4] for x in results]
-		fp = [list(results[x].values())[5] for x in results]
-		fn = [list(results[x].values())[6] for x in results]
+		Returns:
+			The f scores(s) for the confusion matrix 
+		'''
 
-		micro_precision = sum(tp) / (sum(tp) + sum(fp))
-		micro_recall = sum(tp) / (sum(tp) + sum(fn))
-		micro_f = 2 * (micro_precision * micro_recall / (micro_precision + micro_recall))
+		with np.errstate(divide='ignore', invalid='ignore'):
+			f = 2 * np.true_divide(precision * recall, precision + recall)
+			f[f == np.inf] = 0
+			f = np.nan_to_num(f)
 
-		return round(micro_precision, 2), round(micro_recall, 2), round(micro_f, 2)
-
-	# true positive metric
-	def tp(self, y_true, y_pred): 
-		matrix = confusion_matrix(y_true, y_pred)
-
-		if matrix.shape != (2, 2):
-			return 0
-
-		return matrix[1, 1]
-
-	# true negative metric
-	def tn(self, y_true, y_pred): 
-		matrix = confusion_matrix(y_true, y_pred)
-
-		if matrix.shape != (2, 2):
-			return 0
-
-		return matrix[0, 0]
-
-	# false positive metric
-	def fp(self, y_true, y_pred): 
-		matrix = confusion_matrix(y_true, y_pred)
-
-		if matrix.shape != (2, 2):
-			return 0
-
-		return matrix[0, 1]
-	
-	# false negative metric
-	def fn(self, y_true, y_pred): 
-		matrix = confusion_matrix(y_true, y_pred)
-
-		if matrix.shape != (2, 2):
-			return 0
-		
-		return matrix[1, 0]
+			return f

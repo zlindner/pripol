@@ -1,99 +1,59 @@
 import numpy as np
-
-from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, classification_report
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from ml.model import Model
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from keras.wrappers.scikit_learn import KerasClassifier
 from keras.models import Sequential
-from keras import layers
+from keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, Dense
 
-class CNN():
+class CNN(Model):
 
-	def __init__(self, opp115, vectors):
-		print('\n# CNN\n')
+	def __init__(self, data, vectors):
+		self.max_features = None	# max # of features to keep when tokenizing
+		self.max_len = 100 			# max sequence length
+		self.embedding_dim = 300 	# embedding dimension size
+		self.num_filters = 100		# convolutional layer filter size
+		self.ngram_size = 3			# convolutional layer ngram size
+		self.dense_size = 100		# dense layer size
+		self.epochs = 10			# number of epochs when training
+		self.batch_size = 40		# batch size when training
 
-		# embedding hyperparameters
-		self.embedding_dim = 300
-		self.max_len = 100
+		self.vectors = vectors
+		self.binary = False
 
-		# convolution layer hyperparameters
-		self.filters = 200
+		x = data['segment']
+		y = np.argmax(data[Model.LABELS].values, axis=1)
 
-		# training hyperparameters
-		self.epochs = 10
-		self.batch_size = 40
+		super().__init__(x, y)
 
-		# TODO move to opp115.py
-		self.labels = [
-			'first_party_collection_use',
-			'third_party_sharing_collection', 
-			'introductory_generic', 
-			'user_choice_control', 
-			'international_specific_audiences', 
-			'data_security', 
-			'privacy_contact_information', 
-			'user_access_edit_deletion', 
-			'practice_not_covered', 
-			'policy_change', 
-			'data_retention', 
-			'do_not_track'
-		]
-		
-		# split into train and test subsets
-		df = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id']).drop_duplicates()
-		x_train, x_test, y_train, y_test = self.initial_split(df)
+	# wrapper for create_model TODO change to def create(self, kwargs)
+	def create(self):
+		matrix = self.create_matrix(self.vectors)
 
-		# tokenize and create sequences
-		x_train, x_test = self.tokenize(x_train, x_test)
-		y_test = np.argmax(y_test, axis=1)
+		return KerasClassifier(build_fn=self.create_model, matrix=matrix, max_len=self.max_len, num_filters=self.num_filters, ngram_size=self.ngram_size, dense_size=self.dense_size, epochs=self.epochs)
 
-		matrix = self.create_matrix(vectors)
-		self.model = self.create_model(matrix)
-
-		self.train(x_train, y_train)
-
-		y_pred = self.model.predict(x_test)
-		y_pred = np.argmax(y_pred, axis=1)
-
-		print(classification_report(y_test, y_pred, target_names=self.labels))
-
-	# creates the cnn architecture
-	def create_model(self, matrix):
+	def create_model(self, matrix, max_len, num_filters, ngram_size, dense_size):
 		model = Sequential()
 
-		# embedding layer trainable???
-		model.add(layers.Embedding(self.vocab_size, self.embedding_dim, weights=[matrix], input_length=self.max_len, trainable=False))
-		model.add(layers.Conv1D(self.filters, 3, activation='relu'))
-		model.add(layers.GlobalMaxPooling1D())
-		model.add(layers.Dropout(0.5))
-		model.add(layers.Dense(100, activation='relu'))
-		model.add(layers.Dense(12, activation='softmax'))
+		model.add(Embedding(self.vocab_size, self.embedding_dim, weights=[matrix], input_length=max_len))
+		model.add(Conv1D(num_filters, ngram_size, activation='relu'))
+		model.add(GlobalMaxPooling1D())
+		model.add(Dropout(0.5))
+		model.add(Dense(dense_size, activation='relu'))
+		model.add(Dense(len(Model.LABELS), activation='softmax'))
 
 		model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 		return model
 
-	# trains the cnn using stratified kfold cross validation
-	def train(self, x, y):
-		print('training...')
+	def create_test_set(self, x, y):
+		x_train, x_test, y_train, y_test = super().create_test_set(x, y)
+		x_train, x_test = self.create_sequences(x_train, x_test)
 
-		skf = StratifiedKFold(n_splits=10, random_state=42)
-		fold = 1
+		return x_train, x_test, y_train, y_test
 
-		for t, v in skf.split(x, np.argmax(y, axis=1)):
-			print('fold %s...' % fold, end='', flush=True)
-
-			x_train, x_val = x[t], x[v]
-			y_train, y_val = y[t], y[v]
-
-			self.model.fit(x_train, y_train, epochs=self.epochs, batch_size=self.batch_size, validation_data=(x_val, y_val), verbose=0)
-
-			print('done!')
-			fold += 1
-
-	# creates an embedding matrix from word vectors
 	def create_matrix(self, vectors):
-		print('creating embedding matrix...')
+		print('creating embedding matrix...', end='', flush=True)
 
 		matrix = np.zeros((self.vocab_size, self.embedding_dim))
 
@@ -105,21 +65,16 @@ class CNN():
 				vector = vectors[word]
 
 				if vector is not None and len(vector) > 0:
-					matrix[i] = vector	
+					matrix[i] = vector
+
+		print('done!')
 
 		return matrix
 
-	# initial split into testing and training / validation subsets
-	def initial_split(self, df):
-		x = df['segment']
-		y = df[self.labels].values
-		
-		return train_test_split(x, y, test_size=0.1, random_state=42, stratify=y)
+	def create_sequences(self, x_train, x_test):
+		print('creating sequences...', end='', flush=True)
 
-	# TODO look into setting max number of words for feature selection
-	# tokenize and create text sequences
-	def tokenize(self, x_train, x_test, max_features=None):
-		tokenizer = Tokenizer(num_words=max_features)
+		tokenizer = Tokenizer(num_words=self.max_features)
 		tokenizer.fit_on_texts(x_train)
 
 		x_train = tokenizer.texts_to_sequences(x_train)
@@ -129,6 +84,8 @@ class CNN():
 		x_test = pad_sequences(x_test, self.max_len, padding='post')
 
 		self.vocab = tokenizer.word_index
-		self.vocab_size = len(self.vocab) + 1 # add 1 due to reserved 0 index
+		self.vocab_size = len(self.vocab) + 1
 
+		print('done!')
+		
 		return x_train, x_test

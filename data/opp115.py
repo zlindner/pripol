@@ -127,6 +127,7 @@ class OPP115:
 
 	# encodes data practice into one hot format
 	def encode(self):
+		# TODO rewrite this, map array to labels?
 		data_practices = {
 			'Other': 'other',
 			'Introductory/Generic': 'introductory_generic',

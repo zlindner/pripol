@@ -18,7 +18,6 @@ def load_vectors(name):
 		
 	elif name == 'google':
 		vectors = kv.load_word2vec_format('data/google/google-news.bin', binary=True)
-		print('loaded %s vectors' % (len(vectors.wv.vocab)))
 	else:
 		print('Error loading vectors')
 
@@ -35,22 +34,21 @@ warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
 
 # OPP-115
 opp115 = OPP115()
+data = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id']).drop_duplicates()
 #opp115.display_statistics()
+
+# Vectors
+vectors = load_vectors('acl1010')
 
 # MNB
 #mnb = MNB(opp115)
-#mnb.cross_validate('kfold')
-#mnb.cross_validate('stratified_kfold')
+#mnb.cross_validate('')
 #mnb.tune_hyperparameters('kfold')
 
 # SVM
 #svm = SVM(opp115)
-#svm.cross_validate('kfold')
-#svm.cross_validate('stratified_kfold')
+#svm.cross_validate()
 #svm.tune_hyperparameters('kfold')
 
-# Vectors
-vectors = load_vectors('google')
-
 # CNN
-cnn = CNN(opp115, vectors)
+cnn = CNN(data, vectors)
