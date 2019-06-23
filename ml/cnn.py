@@ -9,9 +9,12 @@ from keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, Dense
 
 class CNN(Model):
 
-    def __init__(self, data, vectors):
+    def __init__(self, vectors):
         print('\n# CNN\n')
 
+        self.vectors = vectors
+
+        self.binary = False
         self.max_features = None    # max # of features to keep when tokenizing
         self.max_len = 100 			# max sequence length
         self.embedding_dim = 300 	# embedding dimension size
@@ -21,19 +24,12 @@ class CNN(Model):
         self.epochs = 10			# number of epochs when training
         self.batch_size = 40		# batch size when training
 
-        self.vectors = vectors
-        self.binary = False
-
-        x = data['segment']
-        y = np.argmax(data[Model.LABELS].values, axis=1)
-
-        super().__init__(x, y)
-
     # wrapper for create_model TODO change to def create(self, kwargs)
     def create(self):
         matrix = self.create_matrix(self.vectors)
 
-        return KerasClassifier(build_fn=self.create_model, matrix=matrix, max_len=self.max_len, num_filters=self.num_filters, ngram_size=self.ngram_size, dense_size=self.dense_size, epochs=self.epochs)
+        self.model = KerasClassifier(build_fn=self.create_model, matrix=matrix, max_len=self.max_len, num_filters=self.num_filters,
+                                     ngram_size=self.ngram_size, dense_size=self.dense_size, epochs=self.epochs)
 
     def create_model(self, matrix, max_len, num_filters, ngram_size, dense_size):
         model = Sequential()
@@ -48,12 +44,6 @@ class CNN(Model):
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         return model
-
-    def create_test_set(self, x, y):
-        x_train, x_test, y_train, y_test = super().create_test_set(x, y)
-        x_train, x_test = self.create_sequences(x_train, x_test)
-
-        return x_train, x_test, y_train, y_test
 
     def create_matrix(self, vectors):
         print('creating embedding matrix...', end='', flush=True)
@@ -92,3 +82,21 @@ class CNN(Model):
         print('done!')
 
         return x_train, x_test
+
+    # TODO is this allowed?
+    def create_sequences(self, x):
+        print('creating sequences...', end='', flush=True)
+
+        tokenizer = Tokenizer(num_words=self.max_features)
+        tokenizer.fit_on_texts(x)
+
+        x = tokenizer.texts_to_sequences(x)
+
+        x = pad_sequences(x, self.max_len, padding='post')
+
+        self.vocab = tokenizer.word_index
+        self.vocab_size = len(self.vocab) + 1
+
+        print('done!')
+
+        return x

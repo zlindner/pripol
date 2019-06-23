@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix, classification_report
 
 # TODO add function that formats evaluation output for latex
+# TODO add function that creates table from eval results of all models
 
 
 class Model():
@@ -23,37 +24,32 @@ class Model():
         'do_not_track'
     ]
 
-    def __init__(self, x, y):
-        self.binary = None  # TODO needded?
-
-        x, x_test, y, y_test = self.create_test_set(x, y)  # TODO don't split if evluating
-
-        model = self.create()
-
-        self.evaluate(model, x, y)
-
     def create(self):
         '''Defines the structure of and implements the model'''
 
         raise NotImplementedError
 
-    def train(self, model, x_train, y_train):
+    def train(self, x_train, y_train):
         '''Trains the model with the passed data'''
 
-        model.fit(x_train, y_train, batch_size=self.batch_size, epochs=self.epochs, verbose=0)
+        self.model.fit(x_train, y_train, batch_size=self.batch_size, epochs=self.epochs, verbose=0)
 
-    def predict(self, model, x_test):
-        return model.predict(x_test)
+    def predict(self, x_test):
+        '''Predicts y values for the given data'''
+
+        return self.model.predict(x_test)
 
     def tune(self):
+        '''Optimizes the hyperparamaters of the model'''
+
         raise NotImplementedError
 
-    def evaluate(self, model, x, y, folds=10):
+    def evaluate(self, x, y, folds=10):
         '''Evaluates a model using stratified k-fold cross validation'''
 
         skf = StratifiedKFold(n_splits=folds, random_state=42)
 
-        fold_results = {
+        eval_results = {
             'tn': [],
             'tp': [],
             'fn': [],
@@ -75,53 +71,35 @@ class Model():
             y_train, y_true = y[train], y[test]
 
             print('training... ', end='', flush=True)
-            self.train(model, x_train, y_train)
+            self.train(x_train, y_train)
 
             print('predicting... ', end='', flush=True)
-            y_pred = self.predict(model, x_test)
+            y_pred = self.predict(x_test)
 
-            tn, tp, fn, fp, precision, recall, f = self.calculate_measures(y_true, y_pred)
+            tn, tp, fn, fp, precision, recall, f = self.calc_fold_measures(y_true, y_pred)
 
-            fold_results['tn'].append(sum(tn))  # total fold tn
-            fold_results['tp'].append(sum(tp))  # total fold tp
-            fold_results['fn'].append(sum(fn))  # total fold fn
-            fold_results['fp'].append(sum(fp))  # total fold fp
-            fold_results['precision'].append(precision)  # fold precision for each data practice
-            fold_results['recall'].append(recall)  # fold recall for each data practice
-            fold_results['f'].append(f)  # fold f for each data practice
+            eval_results['tn'].append(sum(tn))  # total fold tn
+            eval_results['tp'].append(sum(tp))  # total fold tp
+            eval_results['fn'].append(sum(fn))  # total fold fn
+            eval_results['fp'].append(sum(fp))  # total fold fp
+            eval_results['precision'].append(precision)  # fold precision for each data practice
+            eval_results['recall'].append(recall)  # fold recall for each data practice
+            eval_results['f'].append(f)  # fold f for each data practice
 
             end = time.time()
             elapsed = str(np.round(end - start, 2))
             print('finished in %ss' % elapsed)  # elapsed time for each fold
 
-        precision_avg = [round(sum(p) / folds, 2) for p in zip(*fold_results['precision'])]  # average precision for each data practice over folds
-        precision_micro = round(sum(fold_results['tp']) / (sum(fold_results['tp']) + sum(fold_results['fp'])), 2)
-        p = precision_avg + [precision_micro]
+        precision, recall, f = self.calc_eval_measures(eval_results, folds)
 
-        recall_avg = [round(sum(r) / folds, 2) for r in zip(*fold_results['recall'])]  # average recall for each data practice over folds
-        recall_micro = round(sum(fold_results['tp']) / (sum(fold_results['tp']) + sum(fold_results['fn'])), 2)
-        r = recall_avg + [recall_micro]
-
-        f_avg = [round(sum(f) / folds, 2) for f in zip(*fold_results['f'])]  # average f for each data practice over folds
-        f_micro = round(2 * ((precision_micro * recall_micro) / (precision_micro + recall_micro)), 2)
-        f = f_avg + [f_micro]
-
-        l = Model.LABELS + ['micro']
-        headers = ['data_practice', 'precision', 'recall', 'f']
-        data = [headers] + list(zip(l, p, r, f))
-
-        for i, d in enumerate(data):
-            line = ' & '.join(str(x).ljust(32) for x in d)
-            print(line)
-            if i == 0:
-                print(' ' * len(line))
+        self.display_eval_measures(precision, recall, f)
 
     def create_test_set(self, x, y):
         '''Creates traing and testing subsets by stratified random sampling'''
 
         return train_test_split(x, y, test_size=0.1, random_state=42, stratify=y)
 
-    def calculate_fold_measures(self, y_true, y_pred):
+    def calc_fold_measures(self, y_true, y_pred):
         '''Calculates precision, recall, and f measures for the given predictions'''
 
         if self.binary:
@@ -140,6 +118,36 @@ class Model():
         f = self.f(precision, recall)
 
         return tn, tp, fn, fp, precision, recall, f
+
+    def calc_eval_measures(self, eval_results, folds):
+        '''Calculates an evaluations micro average precision, recall, and f measures'''
+
+        precision_avg = [round(sum(p) / folds, 2) for p in zip(*eval_results['precision'])]  # average precision for each data practice over folds
+        precision_micro = round(sum(eval_results['tp']) / (sum(eval_results['tp']) + sum(eval_results['fp'])), 2)
+        precision = precision_avg + [precision_micro]
+
+        recall_avg = [round(sum(r) / folds, 2) for r in zip(*eval_results['recall'])]  # average recall for each data practice over folds
+        recall_micro = round(sum(eval_results['tp']) / (sum(eval_results['tp']) + sum(eval_results['fn'])), 2)
+        recall = recall_avg + [recall_micro]
+
+        f_avg = [round(sum(f) / folds, 2) for f in zip(*eval_results['f'])]  # average f for each data practice over folds
+        f_micro = round(2 * ((precision_micro * recall_micro) / (precision_micro + recall_micro)), 2)
+        f = f_avg + [f_micro]
+
+        return precision, recall, f
+
+    def display_eval_measures(self, precision, recall, f):
+        '''Displays evaluation metrics for each data practice in a table'''
+
+        labels = Model.LABELS + ['micro']
+        headers = ['data_practice', 'precision', 'recall', 'f']
+        data = [headers] + list(zip(labels, precision, recall, f))
+
+        for i, d in enumerate(data):
+            line = ' | '.join(str(x).ljust(32) for x in d)
+            print(line)
+            if i == 0:
+                print(' ' * len(line))
 
     def precision(self, tp, fp):
         '''Calculates the precision score(s) for a confusion matrix'''

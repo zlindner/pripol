@@ -1,9 +1,11 @@
 import tensorflow as tf
 import warnings
 import os
+import numpy as np
 
 from sklearn.exceptions import UndefinedMetricWarning
 from data.opp115 import OPP115
+from ml.model import Model
 from ml.mnb import MNB
 from ml.svm import SVM
 from ml.cnn import CNN
@@ -53,4 +55,10 @@ vectors = load_vectors('acl1010')
 # svm.tune_hyperparameters('kfold')
 
 # CNN
-cnn = CNN(data, vectors)
+x = data['segment']
+y = np.argmax(data[Model.LABELS].values, axis=1)
+
+cnn = CNN(vectors)
+x = cnn.create_sequences(x)  # idk if this should be in a separate class
+cnn.create()
+cnn.evaluate(x, y)
