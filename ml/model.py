@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix, classification_report
 
 # TODO add function that formats evaluation output for latex
@@ -103,8 +103,12 @@ class Model():
         '''Calculates precision, recall, and f measures for the given predictions'''
 
         if self.binary:
-             # TODO calculations for binary classifier
-            pass
+            cm = confusion_matrix(y_true, y_pred)
+
+            tn = cm[0, 0]
+            tp = cm[1, 1]
+            fn = cm[1, 0]
+            fp = cm[0, 1]
         else:
             mcm = multilabel_confusion_matrix(y_true, y_pred)
 

@@ -10,7 +10,10 @@ class SVM(Model):
         print('\n# SVM\n')
 
         self.binary = True
+        self.alpha = 0.0001
+        self.iterations = 100
+        self.tolerance = 0.001
 
-        def create(self):
-            svm = SGDClassifier(loss='hinge', penalty='l2', alpha=0.0001, max_iter=100, tol=0.001, random_state=42)
-            self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', svm)])
+    def create(self):
+        svm = SGDClassifier(loss='hinge', penalty='l2', alpha=self.alpha, max_iter=self.iterations, tol=self.tolerance, random_state=42)
+        self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', svm)])

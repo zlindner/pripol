@@ -44,21 +44,25 @@ data = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id'])
 # Vectors
 vectors = load_vectors('acl1010')
 
-# MNB
-# mnb = MNB(opp115)
-# mnb.cross_validate('')
-# mnb.tune_hyperparameters('kfold')
+# CNN
+#x = data['segment']
+#y = np.argmax(data[Model.LABELS].values, axis=1)
+
+#cnn = CNN(vectors)
+# x = cnn.create_sequences(x)  # idk if this should be in a separate class
+# cnn.create()
+#cnn.evaluate(x, y)
 
 # SVM
-# svm = SVM(opp115)
+x = data['segment']
+y = data[Model.LABELS]
+
+svm = SVM()
+svm.create()
+#svm.evaluate(x, y)
 # svm.cross_validate()
 # svm.tune_hyperparameters('kfold')
 
-# CNN
-x = data['segment']
-y = np.argmax(data[Model.LABELS].values, axis=1)
-
-cnn = CNN(vectors)
-x = cnn.create_sequences(x)  # idk if this should be in a separate class
-cnn.create()
-cnn.evaluate(x, y)
+# MNB
+mnb = MNB()
+mnb.create()
