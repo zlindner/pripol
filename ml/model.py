@@ -25,7 +25,7 @@ class Model():
         'do_not_track'
     ]
 
-    def create(self):
+    def create(self, **params):
         '''Defines the structure of and implements the model'''
 
         raise NotImplementedError
@@ -43,10 +43,19 @@ class Model():
 
         return self.model.predict(x_test)
 
-    def tune(self):
+    def tune(self, x, y):
         '''Optimizes the hyperparamaters of the model'''
 
-        raise NotImplementedError
+        params = {
+            'num_filters': [100, 200],
+            'ngram_size': [3],
+            'dense_size': [100]
+        }
+
+        search = RandomizedSearchCV(self.model, params, cv=10)
+        search.fit(x, y)
+
+        print(search.best_params_)
 
     def evaluate(self, x, y, folds=10):
         '''Evaluates a model using stratified k-fold cross validation'''

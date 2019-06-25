@@ -41,27 +41,28 @@ opp115 = OPP115()
 # opp115.display_statistics()
 
 # Vectors
-#vectors = load_vectors('acl1010')
+vectors = load_vectors('acl1010')
 
 # CNN
-#data = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id']).drop_duplicates()
-#x = data['segment']
-#y = np.argmax(data[Model.LABELS].values, axis=1)
+data = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id']).drop_duplicates()
+x = data['segment']
+y = np.argmax(data[Model.LABELS].values, axis=1)
 
-#cnn = CNN(vectors)
-# x = cnn.create_sequences(x)  # idk if this should be in a separate class
-# cnn.create()
-#cnn.evaluate(x, y)
+cnn = CNN(vectors)
+x = cnn.create_sequences(x)  # idk if this should be in a separate class
+#cnn.create(num_filters=100, ngram_size=3, dense_size=100)
+# cnn.evaluate(x, y)
+cnn.tune(x, y)
 
 # SVM
-x = opp115.consolidated
-y = opp115.encoded
+# x = opp115.consolidated
+# y = opp115.encoded
 
-svm = SVM()
-svm.create()
-svm.evaluate(x, y)
+# svm = SVM()
+# svm.create()
+# svm.evaluate(x, y)
 
 # MNB
-mnb = MNB()
-mnb.create()
-mnb.evaluate(x, y)
+# mnb = MNB()
+# mnb.create()
+# mnb.evaluate(x, y)

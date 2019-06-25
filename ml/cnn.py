@@ -12,29 +12,21 @@ class CNN(Model):
     def __init__(self, vectors):
         print('\n# CNN\n')
 
-        self.vectors = vectors
-
         self.binary = False
         self.max_features = None    # max # of features to keep when tokenizing
-        self.max_len = 100 			# max sequence length
+        self.max_len = 100          # max sequence length
         self.embedding_dim = 300 	# embedding dimension size
-        self.num_filters = 100		# convolutional layer filter size
-        self.ngram_size = 3			# convolutional layer ngram size
-        self.dense_size = 100		# dense layer size
         self.epochs = 10			# number of epochs when training
-        self.batch_size = 40		# batch size when training
+        self.batch_size = 40		# training batch size
 
-    # wrapper for create_model TODO change to def create(self, kwargs)
-    def create(self):
-        matrix = self.create_matrix(self.vectors)
+        matrix = self.create_matrix(vectors)
+        self.embedding_layer = Embedding(self.vocab_size, self.embedding_dim, weights=[matrix], input_length=self.max_len, trainable=False)
+        self.model = KerasClassifier(build_fn=self.create, epochs=self.epochs, batch_size=self.batch_size)
 
-        self.model = KerasClassifier(build_fn=self.create_model, matrix=matrix, max_len=self.max_len, num_filters=self.num_filters,
-                                     ngram_size=self.ngram_size, dense_size=self.dense_size, epochs=self.epochs)
-
-    def create_model(self, matrix, max_len, num_filters, ngram_size, dense_size):
+    def create(self, num_filters, ngram_size, dense_size):
         model = Sequential()
 
-        model.add(Embedding(self.vocab_size, self.embedding_dim, weights=[matrix], input_length=max_len))
+        model.add(self.embedding_layer)
         model.add(Conv1D(num_filters, ngram_size, activation='relu'))
         model.add(GlobalMaxPooling1D())
         model.add(Dropout(0.5))
