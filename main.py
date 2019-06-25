@@ -38,13 +38,13 @@ warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
 
 # OPP-115
 opp115 = OPP115()
-data = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id']).drop_duplicates()
 # opp115.display_statistics()
 
 # Vectors
-vectors = load_vectors('acl1010')
+#vectors = load_vectors('acl1010')
 
 # CNN
+#data = opp115.consolidated.merge(opp115.encoded, on=['policy_id', 'segment_id']).drop_duplicates()
 #x = data['segment']
 #y = np.argmax(data[Model.LABELS].values, axis=1)
 
@@ -54,15 +54,14 @@ vectors = load_vectors('acl1010')
 #cnn.evaluate(x, y)
 
 # SVM
-x = data['segment']
-y = data[Model.LABELS]
+x = opp115.consolidated
+y = opp115.encoded
 
 svm = SVM()
 svm.create()
-#svm.evaluate(x, y)
-# svm.cross_validate()
-# svm.tune_hyperparameters('kfold')
+svm.evaluate(x, y)
 
 # MNB
 mnb = MNB()
 mnb.create()
+mnb.evaluate(x, y)

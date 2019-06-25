@@ -13,5 +13,5 @@ class MNB(Model):
         self.alpha = 0.1
 
     def create(self):
-        mnb = MultinomialNB(alpha=0.1)
+        mnb = MultinomialNB(alpha=self.alpha)
         self.model = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('classifier', mnb)])
