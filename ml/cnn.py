@@ -12,6 +12,7 @@ class CNN(Model):
     def __init__(self, vectors):
         print('\n# CNN\n')
 
+        self.vectors = vectors
         self.binary = False
         self.max_features = None    # max # of features to keep when tokenizing
         self.max_len = 100          # max sequence length
@@ -19,14 +20,16 @@ class CNN(Model):
         self.epochs = 10			# number of epochs when training
         self.batch_size = 40		# training batch size
 
-        matrix = self.create_matrix(vectors)
-        self.embedding_layer = Embedding(self.vocab_size, self.embedding_dim, weights=[matrix], input_length=self.max_len, trainable=False)
         self.model = KerasClassifier(build_fn=self.create, epochs=self.epochs, batch_size=self.batch_size)
 
-    def create(self, num_filters, ngram_size, dense_size):
+    def create(self, num_filters=600, ngram_size=6, dense_size=100):
+        print('params: %s %s' % (num_filters, ngram_size))
+
+        matrix = self.create_matrix(self.vectors)
+
         model = Sequential()
 
-        model.add(self.embedding_layer)
+        model.add(Embedding(self.vocab_size, self.embedding_dim, weights=[matrix], input_length=self.max_len, trainable=False))
         model.add(Conv1D(num_filters, ngram_size, activation='relu'))
         model.add(GlobalMaxPooling1D())
         model.add(Dropout(0.5))
@@ -38,8 +41,6 @@ class CNN(Model):
         return model
 
     def create_matrix(self, vectors):
-        print('creating embedding matrix...', end='', flush=True)
-
         matrix = np.zeros((self.vocab_size, self.embedding_dim))
 
         for word, i in self.vocab.items():
@@ -51,8 +52,6 @@ class CNN(Model):
 
                 if vector is not None and len(vector) > 0:
                     matrix[i] = vector
-
-        print('done!')
 
         return matrix
 

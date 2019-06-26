@@ -47,8 +47,8 @@ class Model():
         '''Optimizes the hyperparamaters of the model'''
 
         params = {
-            'num_filters': [100, 200],
-            'ngram_size': [3],
+            'num_filters': [100, 200, 300, 400, 500, 600, 700],
+            'ngram_size': [3, 4, 5, 6, 7],
             'dense_size': [100]
         }
 
@@ -183,6 +183,7 @@ class Model():
             fp = cm[0, 1]
         else:
             mcm = multilabel_confusion_matrix(y_true, y_pred)
+            print(mcm)
 
             tn = mcm[:, 0, 0]
             tp = mcm[:, 1, 1]
@@ -199,6 +200,8 @@ class Model():
         precision = self.precision(tp, fp)
         recall = self.recall(tp, fn)
         f = self.f(precision, recall)
+
+        print('%s %s %s' % (precision, recall, f))
 
         return tn, tp, fn, fp, precision, recall, f
 

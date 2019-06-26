@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import data.utils as utils
 
+from data.inverted_index import InvertedIndex, Database
 from glob import glob
 from ast import literal_eval
 from nltk.stem import PorterStemmer
@@ -27,6 +28,9 @@ class OPP115:
             'data_practices_consolidated': []
         }
 
+        self.db = Database()
+        self.iindex = InvertedIndex(self.db)
+
         self.annotations = self.load_annotations()
         self.stats['data_practices'] = self.annotations['data_practice'].value_counts()
 
@@ -37,6 +41,9 @@ class OPP115:
         # load and link policies
         self.policies = self.load_policies()
         self.linked = self.link()
+
+        print(self.iindex.lookup('data'))
+        print(len(self.iindex.index))
 
         # consolidate multiple annotations for a segment into one
         self.consolidated = self.consolidate()
@@ -98,6 +105,14 @@ class OPP115:
         for filename in glob('data/opp115/sanitized_policies/*.html'):
             with open(filename, 'r') as f:
                 policy = f.read()
+
+                doc = {
+                    'text': policy,
+                    'id': filename[31:-5].split('_')[0]
+                }
+
+                self.iindex.index_doc(doc)
+
                 segments = policy.split('|||')
 
                 df = pd.DataFrame(columns=['policy_id', 'segment_id', 'segment'])
