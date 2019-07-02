@@ -12,7 +12,7 @@ def remove_html(string):
 def clean(string):
     stop = set(stopwords.words('english'))  # init stopwords
 
-    string = string.lower()
+    #string = string.lower()
     string = ' '.join([word for word in string.split() if word not in stop])
     string = re.sub(r'[^A-Za-z0-9(),!?\'\`]', ' ', string)
     #string = re.sub(r'\'s', ' \'s', string)
@@ -28,7 +28,7 @@ def clean(string):
     string = re.sub(r'\?', ' \? ', string)
     string = re.sub(r'\s{2,}', ' ', string)
 
-    stemmer = PorterStemmer()
-    string = ' '.join([stemmer.stem(word) for word in string.split(' ')])
+    #stemmer = PorterStemmer()
+    #string = ' '.join([stemmer.stem(word) for word in string.split(' ')])
 
     return string.strip()
