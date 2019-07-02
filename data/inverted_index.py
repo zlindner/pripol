@@ -1,38 +1,9 @@
 import data.utils as utils
 
 
-class Database():
-
-    def __init__(self):
-        self.db = dict()
-
-    def __repr__(self):
-        return str(self.__dict__)
-
-    def get(self, id):
-        return self.db.get(id, None)
-
-    def add(self, document):
-        return self.db.update({document['id']: document})
-
-    def remove(self, document):
-        return self.db.pop(document['id'], None)
-
-
-class Node():
-
-    def __init__(self, id, freq):
-        self.id = id
-        self.freq = freq
-
-    def __repr__(self):
-        return str(self.__dict__)
-
-
 class InvertedIndex():
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self):
         self.index = dict()
 
     def __repr__(self):
@@ -40,23 +11,20 @@ class InvertedIndex():
 
     def index_document(self, document):
         text = document['text']
+        terms = text.split(' ')
+        term_freqs = dict()
 
-        text = utils.remove_html(text)
-        text = utils.clean(text)
+        for term in terms:
+            term_freq = term_freqs[term]['freq'] if term in term_freqs else 0
+            term_freqs[term] = {'id': document['id'], 'freq': term_freq + 1}
 
-        words = text.split(' ')
-        word_freqs = dict()
-
-        for word in words:
-            word_freq = word_freqs[word].freq if word in word_freqs else 0
-            word_freqs[word] = Node(document['id'], word_freq + 1)
+            #Node(document['id'], term_freq + 1)
 
         update_dict = {
-            key: [node] if key not in self.index else self.index[key] + [node] for (key, node) in word_freqs.items()
+            key: [node] if key not in self.index else self.index[key] + [node] for (key, node) in term_freqs.items()
         }
 
         self.index.update(update_dict)
-        self.db.add(document)
 
     def lookup(self, query):
-        return {word: self.index[word] for word in query.split(' ') if word in self.index}
+        return {term: self.index[term] for term in query.split(' ') if term in self.index}

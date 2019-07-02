@@ -1,6 +1,7 @@
 import pandas as pd
+import data.utils as utils
 
-from data.inverted_index import InvertedIndex, Database
+from data.inverted_index import InvertedIndex
 
 
 class Corpus():
@@ -22,8 +23,7 @@ class Corpus():
 
     def __init__(self):
         self.opp115 = None
-        self.db = Database()
-        self.iindex = InvertedIndex(self.db)
+        self.iindex = InvertedIndex()
         self.metadata = {}  # map of relative document id -> policy id
 
     def load(self):
@@ -32,6 +32,8 @@ class Corpus():
         print('Loading corpus...')
 
         self.opp115 = pd.read_csv('data/corpus/opp115.csv', sep=',', header=0)
+        self.opp115['segment'] = self.opp115['segment'].apply(utils.clean)
+
         self.index()
 
         return self.opp115
@@ -54,6 +56,11 @@ class Corpus():
             self.iindex.index_document(document)
 
             id += 1
+
+        # calculate term frequencies
+        for term in self.iindex.index:
+            term_freq = sum([node['freq'] for node in self.iindex.index[term]])
+            self.iindex.index[term].append({'id': -1, 'freq': term_freq})
 
     def generate_statistics(self):
         '''Generates statistics for the opp115 corpus. load() must be called before generating statistics'''
