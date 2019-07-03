@@ -11,8 +11,6 @@ from keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split, StratifiedKFold, ParameterGrid
 from sklearn.metrics import classification_report
 
-# TODO add output to file for eval results
-
 
 class CNN():
 
@@ -40,89 +38,6 @@ class CNN():
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         return model
-
-    def evaluate(self, num_filters=100, ngram_size=3):
-        # TODO way to set params of model
-
-        x = self.corpus['segment']
-        y = self.corpus[Corpus.DATA_PRACTICES].values
-
-        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-
-        fold = 1
-        true = []
-        pred = []
-
-        for train, test in skf.split(x, np.argmax(y, axis=1)):
-            print('Fold # %s...' % fold, end='', flush=True)
-            fold += 1
-            fold_start = time.time()
-
-            x_train, x_test = x[train], x[test]
-            y_train, y_test = y[train], y[test]
-
-            x_train, x_test, vocab = self.create_sequences(x_train, x_test)
-
-            model = self.create(vocab, num_filters, ngram_size)
-            model.fit(x_train, y_train, epochs=20, batch_size=50, verbose=0)
-
-            y_pred = model.predict(x_test)
-            y_test, y_pred = np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1)
-
-            true.extend(y_test)
-            pred.extend(y_pred)
-
-            fold_end = time.time()
-            elapsed = str(np.round(fold_end - fold_start, 2))
-            print('%ss' % elapsed)  # elapsed time for each label
-
-        print(classification_report(true, pred, target_names=Corpus.DATA_PRACTICES))  # accuracy = micro avg
-
-    def tune(self):
-        grid = {
-            'num_filters': [100, 200, 300, 400, 500, 600, 700],
-            'ngram_size': [3, 4, 5, 6, 7]
-        }
-
-        param_grid = list(ParameterGrid(grid))
-
-        for param in param_grid:
-            print(param)
-
-            x = self.corpus['segment']
-            y = self.corpus[Corpus.DATA_PRACTICES].values
-
-            skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-
-            fold = 1
-            true = []
-            pred = []
-
-            for train, test in skf.split(x, np.argmax(y, axis=1)):
-                print('Fold # %s...' % fold)
-                fold += 1
-
-                x_train, x_test = x[train], x[test]
-                y_train, y_test = y[train], y[test]
-
-                x_train, x_test, vocab = self.create_sequences(x_train, x_test)
-
-                model = self.create(vocab, param['num_filters'], param['ngram_size'])
-                model.fit(x_train, y_train, epochs=20, batch_size=50, verbose=0)
-
-                y_pred = model.predict(x_test)
-                y_test, y_pred = np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1)
-
-                true.extend(y_test)
-                pred.extend(y_pred)
-
-            param['accuracy'] = classification_report(true, pred, target_names=Corpus.DATA_PRACTICES, output_dict=True)['accuracy']
-            print(param['accuracy'])
-
-        best = max(param_grid, key=lambda x: x['accuracy'])
-
-        print(param_grid)
-        print(best)
 
     def create_matrix(self, vocab, vocab_size, vectors):
         matrix = np.zeros((vocab_size, self.embedding_dim))
@@ -153,5 +68,77 @@ class CNN():
 
         return x_train, x_test, vocab
 
-    def kfold(self):
-        pass
+    def evaluate(self, num_filters, ngram_size, output_file=None):
+        x = self.corpus['segment']
+        y = self.corpus[Corpus.DATA_PRACTICES].values
+
+        true, pred, times = self.kfold(x, y, num_filters, ngram_size, folds=3, epochs=1)
+        results = classification_report(true, pred, target_names=Corpus.DATA_PRACTICES)  # accuracy = micro avg
+
+        print(results)
+        print('Total time elapsed: %ss\n' % np.round(sum(times), 2))
+
+        if output_file is not None:
+            with open('results/' + output_file, 'w') as f:
+                f.write(results + '\nTotal time elapsed: %ss\n' % sum(times))
+
+    def tune(self):
+        grid = {
+            'num_filters': [100, 200, 300, 400, 500, 600, 700],
+            'ngram_size': [3, 4, 5, 6, 7]
+        }
+
+        param_grid = list(ParameterGrid(grid))
+
+        for param in param_grid:
+            print(param)
+
+            x = self.corpus['segment']
+            y = self.corpus[Corpus.DATA_PRACTICES].values
+
+            true, pred, times = self.kfold(x, y, param['num_filters'], param['ngram_size'], folds=10, epochs=20)
+
+            results = classification_report(true, pred, target_names=Corpus.DATA_PRACTICES, output_dict=True)
+            param['accuracy'] = results['accuracy']
+            param['time'] = times
+
+            print(param['accuracy'])
+
+        best = max(param_grid, key=lambda x: x['accuracy'])
+
+        print(param_grid)
+        print(best)
+
+    def kfold(self, x, y, num_filters, ngram_size, folds, epochs):
+        skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
+
+        fold = 1
+        true = []
+        pred = []
+        times = []
+
+        for train, test in skf.split(x, np.argmax(y, axis=1)):
+            print('Fold # %s...' % fold, end='', flush=True)
+            fold += 1
+            fold_start = time.time()
+
+            x_train, x_test = x[train], x[test]
+            y_train, y_test = y[train], y[test]
+
+            x_train, x_test, vocab = self.create_sequences(x_train, x_test)
+
+            model = self.create(vocab, num_filters, ngram_size)
+            model.fit(x_train, y_train, epochs=epochs, batch_size=50, verbose=0)
+
+            y_pred = model.predict(x_test)
+            y_test, y_pred = np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1)
+
+            true.extend(y_test)
+            pred.extend(y_pred)
+
+            fold_end = time.time()
+            elapsed = np.round(fold_end - fold_start, 2)
+            times.append(elapsed)
+            print('%ss' % elapsed)  # elapsed time for each fold
+
+        return true, pred, times

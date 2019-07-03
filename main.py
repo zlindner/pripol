@@ -25,5 +25,5 @@ opp115 = corpus.load()
 # print(statistics)
 
 cnn = CNN(opp115)
-cnn.evaluate()
+cnn.evaluate(num_filters=100, ngram_size=3, output_file='test.txt')
 # cnn.tune()
