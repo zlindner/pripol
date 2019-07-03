@@ -1,5 +1,6 @@
 import data.vectors as vectors
 import numpy as np
+import time
 
 from data.corpus import Corpus
 from keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, Dense
@@ -9,6 +10,8 @@ from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split, StratifiedKFold, ParameterGrid
 from sklearn.metrics import classification_report
+
+# TODO add output to file for eval results
 
 
 class CNN():
@@ -38,7 +41,7 @@ class CNN():
 
         return model
 
-    def evaluate(self):
+    def evaluate(self, num_filters=100, ngram_size=3):
         # TODO way to set params of model
 
         x = self.corpus['segment']
@@ -51,15 +54,16 @@ class CNN():
         pred = []
 
         for train, test in skf.split(x, np.argmax(y, axis=1)):
-            print('Fold # %s...' % fold)
+            print('Fold # %s...' % fold, end='', flush=True)
             fold += 1
+            fold_start = time.time()
 
             x_train, x_test = x[train], x[test]
             y_train, y_test = y[train], y[test]
 
             x_train, x_test, vocab = self.create_sequences(x_train, x_test)
 
-            model = self.create(vocab, 100, 3)
+            model = self.create(vocab, num_filters, ngram_size)
             model.fit(x_train, y_train, epochs=20, batch_size=50, verbose=0)
 
             y_pred = model.predict(x_test)
@@ -68,12 +72,16 @@ class CNN():
             true.extend(y_test)
             pred.extend(y_pred)
 
+            fold_end = time.time()
+            elapsed = str(np.round(fold_end - fold_start, 2))
+            print('%ss' % elapsed)  # elapsed time for each label
+
         print(classification_report(true, pred, target_names=Corpus.DATA_PRACTICES))  # accuracy = micro avg
 
     def tune(self):
         grid = {
-            'num_filters': [100, 200],
-            'ngram_size': [3]
+            'num_filters': [100, 200, 300, 400, 500, 600, 700],
+            'ngram_size': [3, 4, 5, 6, 7]
         }
 
         param_grid = list(ParameterGrid(grid))
@@ -99,8 +107,8 @@ class CNN():
 
                 x_train, x_test, vocab = self.create_sequences(x_train, x_test)
 
-                model = self.create(vocab, 100, 3)
-                model.fit(x_train, y_train, epochs=1, batch_size=50, verbose=0)
+                model = self.create(vocab, param['num_filters'], param['ngram_size'])
+                model.fit(x_train, y_train, epochs=20, batch_size=50, verbose=0)
 
                 y_pred = model.predict(x_test)
                 y_test, y_pred = np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1)
@@ -109,6 +117,7 @@ class CNN():
                 pred.extend(y_pred)
 
             param['accuracy'] = classification_report(true, pred, target_names=Corpus.DATA_PRACTICES, output_dict=True)['accuracy']
+            print(param['accuracy'])
 
         best = max(param_grid, key=lambda x: x['accuracy'])
 

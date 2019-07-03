@@ -18,8 +18,6 @@ class InvertedIndex():
             term_freq = term_freqs[term]['freq'] if term in term_freqs else 0
             term_freqs[term] = {'id': document['id'], 'freq': term_freq + 1}
 
-            #Node(document['id'], term_freq + 1)
-
         update_dict = {
             key: [node] if key not in self.index else self.index[key] + [node] for (key, node) in term_freqs.items()
         }

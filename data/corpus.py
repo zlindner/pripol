@@ -9,13 +9,13 @@ class Corpus():
     DATA_PRACTICES = [
         'first_party_collection_use',
         'third_party_sharing_collection',
-        'introductory_generic',
+        # 'introductory_generic',
         'user_choice_control',
         'international_specific_audiences',
         'data_security',
-        'privacy_contact_information',
+        # 'privacy_contact_information',
         'user_access_edit_deletion',
-        'practice_not_covered',
+        # 'practice_not_covered',
         'policy_change',
         'data_retention',
         'do_not_track'
@@ -32,7 +32,13 @@ class Corpus():
         print('Loading corpus...')
 
         self.opp115 = pd.read_csv('data/corpus/opp115.csv', sep=',', header=0)
+
+        self.opp115 = self.opp115[(self.opp115['data_practice'] != 'Introductory/Generic') &
+                                  (self.opp115['data_practice'] != 'Privacy contact information') &
+                                  (self.opp115['data_practice'] != 'Practice not covered') &
+                                  (self.opp115['data_practice'] != 'Other')]
         self.opp115['segment'] = self.opp115['segment'].apply(utils.clean)
+        self.opp115.reset_index(inplace=True)
 
         self.index()
 
