@@ -1,6 +1,5 @@
 import re
 from nltk.corpus import stopwords
-from nltk import PorterStemmer
 
 
 def clean(string):
@@ -17,9 +16,6 @@ def clean(string):
     string = re.sub(r'\)', ' \) ', string)
     string = re.sub(r'\?', ' \? ', string)
     string = re.sub(r' +', ' ', string)
-
-    #stemmer = PorterStemmer()
-    #string = ' '.join([stemmer.stem(word) for word in string.split(' ')])
 
     return string.strip()
 

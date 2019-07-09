@@ -23,6 +23,3 @@ class InvertedIndex():
         }
 
         self.index.update(update_dict)
-
-    def lookup(self, query):
-        return {term: self.index[term] for term in query.split(' ') if term in self.index}
