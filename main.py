@@ -20,9 +20,9 @@ corpus = Corpus()
 opp115 = corpus.load()
 
 # select top 1000 features
-descending = sorted(corpus.iindex.index, key=lambda x: [node['freq'] for node in corpus.iindex.index[x] if node['id'] == -1], reverse=True)
-features = descending[:1000]
-opp115['segment'] = opp115['segment'].apply(lambda x: ' '.join([word for word in x.split() if word in features]))
+#descending = sorted(corpus.iindex.index, key=lambda x: [node['freq'] for node in corpus.iindex.index[x] if node['id'] == -1], reverse=True)
+#features = descending[:1000]
+#opp115['segment'] = opp115['segment'].apply(lambda x: ' '.join([word for word in x.split() if word in features]))
 
 
 #statistics = corpus.generate_statistics()
