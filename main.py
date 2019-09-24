@@ -24,16 +24,14 @@ opp115 = corpus.load()
 #features = descending[:1000]
 #opp115['segment'] = opp115['segment'].apply(lambda x: ' '.join([word for word in x.split() if word in features]))
 
-
 #statistics = corpus.generate_statistics()
 # print(statistics)
 
-#cnn = CNN(opp115)
-#cnn.evaluate(num_filters=100, ngrams=[3, 4, 5])
-# cnn.tune()
+cnn = CNN(opp115)
+cnn.evaluate(num_filters=200, ngrams=[2, 3], save_results=False)
 
 #svm = SVM(opp115)
-#svm.evaluate(alpha=0.0001, iterations=100, tolerance=0.001, save_results=True)
+#svm.evaluate(alpha=0.0001, iterations=100, tolerance=0.001, save_results=False)
 
 #mnb = MNB(opp115)
-#mnb.evaluate(alpha=0.1, save_results=True)
+#mnb.evaluate(alpha=0.1, save_results=False)
