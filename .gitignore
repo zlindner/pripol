@@ -4,10 +4,6 @@
 # directories
 .vscode
 __pycache__
-
 env/
-data/
-ml/
-
 opp-115/
 acl-1010/
