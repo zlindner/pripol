@@ -100,7 +100,22 @@ def practice_counts(data):
     # TODO
     pass
 
-def attribute_counts(data):
+def generate_attribute_distribution(data):
+    with open('opp-115/attribute_dist.txt', 'w') as f:
+        for dp in data['data_practice'].unique():
+            f.write(dp + '\n')
+
+            attributes = get_attribute_counts(data[data['data_practice'] == dp])
+
+            for attr in attributes.keys():
+                f.write('\t' + attr + '\n')
+
+                for val, count in attributes[attr].items():
+                    f.write('\t\t%s: %s\n' % (val, count))
+
+            f.write('\n')
+
+def get_attribute_counts(data):
     attributes = data['attributes'].to_list()
     counts = {}
 
@@ -116,24 +131,3 @@ def attribute_counts(data):
                 counts[k][v['value']] += 1
 
     return counts
-
-'''
-policies = []
-
-for f in glob('opp-115/sanitized_policies/*.html'):
-    with open(f, 'r') as policy:
-        text = policy.read()
-        segments = text.split('|||')
-
-        p = {}
-        p['name'] = f[27:]
-        p['text'] = segments
-
-        policies.append(p)
-        
-with open('./opp115.txt', 'w') as f:
-    for p in policies:
-        f.write(p['name'] + '\n')
-        f.write('\n'.join(p['text']))
-        f.write('\n\n')
-'''

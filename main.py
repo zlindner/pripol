@@ -51,9 +51,10 @@ def test_net(data):
     y_test, y_pred = np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1)
     print(classification_report(y_test, y_pred))
 
-# initialize data
-data = opp115.load()
-data = data[data['data_practice'] != 'Other']
 
-test_classical(data)
+data = opp115.load()
+#data = data[data['data_practice'] != 'Other']
+#opp115.generate_attribute_distribution(data)
+
+#test_classical(data)
 #test_net(data)
