@@ -19,7 +19,7 @@ DATA_PRACTICES = [
         'policy_change',
         'data_retention',
         'do_not_track',
-        #'other'
+        'other'
 ]
 
 def load(clean_text=True):
