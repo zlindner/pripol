@@ -5,8 +5,9 @@ from keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, LSTM, D
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras import backend as K
+from keras.callbacks.callbacks import EarlyStopping
 from gensim.models import KeyedVectors
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, ParameterGrid
 from sklearn.metrics import classification_report
 from time import time
 
@@ -23,10 +24,16 @@ def cnn(matrix, vocab_size, params):
 
 def lstm(matrix, vocab_size, params):
     model = Sequential()
-    model.add(Embedding(vocab_size, 300, weights=[matrix], input_length=100, trainable=False))
-    #model.add(Dropout(0.5))
+    model.add(Embedding(vocab_size, 300, weights=[matrix], input_length=200, trainable=False))
+
+    if params['embedding_dropout'] is not None:
+        model.add(Dropout(params['embedding_dropout']))
+
     model.add(LSTM(params['memory_dim']))
-    #model.add(Dropout(0.5))
+    
+    if params['lstm_dropout'] is not None:
+        model.add(Dropout(params['lstm_dropout']))
+
     model.add(Dense(len(DATA_PRACTICES), activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -45,10 +52,10 @@ def init_sequences(x, padding):
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(x)
     vocab = tokenizer.word_index
-    print('found %s unique tokens' % len(tokenizer.word_index))
+    #print('found %s unique tokens' % len(tokenizer.word_index))
 
     x = tokenizer.texts_to_sequences(x)
-    x = pad_sequences(x, maxlen=100, padding=padding)
+    x = pad_sequences(x, maxlen=200, padding=padding)
     
     return x, vocab
 
@@ -70,9 +77,9 @@ def init_matrix(vocab, vec):
 
 def evaluate(x, y, model_name, params, verbose=True):
     if model_name == 'lstm' or model_name == 'cnn_lstm': # TODO not sure if cnn_lstm should use pre or post padding
-        x, vocab = init_sequences(x, padding='post')
-    elif model_name == 'cnn':
         x, vocab = init_sequences(x, padding='pre')
+    elif model_name == 'cnn':
+        x, vocab = init_sequences(x, padding='post')
     
     vocab_size = len(vocab) + 1
     vec = KeyedVectors.load('acl-1010/acl1010.vec', mmap='r')
@@ -102,7 +109,7 @@ def evaluate(x, y, model_name, params, verbose=True):
         elif model_name == 'cnn_lstm':
             model = cnn_lstm(matrix, vocab_size, params)
 
-        model.fit(x_train, y_train, epochs=50, batch_size=64, verbose=0)
+        model.fit(x_train, y_train, epochs=20, batch_size=64, verbose=0)
 
         y_predict = model.predict(x_test)
         y_test, y_predict = np.argmax(y_test, axis=1), np.argmax(y_predict, axis=1)
@@ -123,6 +130,19 @@ def evaluate(x, y, model_name, params, verbose=True):
         print(classification_report(actual, predictions))
 
     return results, round(total_time, 2)
+
+def tune(x, y, model_name, params):
+    grid = list(ParameterGrid(params))
+
+    print('tuning %s with parameters %s' % (model_name, params))
+
+    for params in grid:
+        print('testing %s' % params, end='', flush=True)
+        
+        results, eval_time = evaluate(x, y, model_name, params, verbose=False)
+        f = round(results['accuracy'], 2)
+        
+        print('\t\t%s\t\t%ss' % (f, eval_time))
 
 def get_layer_output(n, cnn, x):
     get_layer_output = K.function([cnn.layers[0].input], [cnn.layers[n].output])

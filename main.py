@@ -28,7 +28,15 @@ x = data['text'].values
 y = pd.get_dummies(data['data_practice']).values # net
 #y = data['data_practice'].values # classical
 
-net.evaluate(x, y, 'lstm', {'memory_dim': 100})
+params = {
+    'memory_dim': [32, 64, 96, 128, 156, 256],
+    'embedding_dropout': [None, 0.5],
+    'lstm_dropout': [None, 0.5]
+}
+
+net.tune(x, y, 'lstm', params)
+
+#net.evaluate(x, y, 'lstm', {'memory_dim': 150, 'embedding_dropout': 0.5, 'lstm_dropout': 0.5})
 
 '''tokenizer = Tokenizer()
 tokenizer.fit_on_texts(x)
