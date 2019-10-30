@@ -5,8 +5,8 @@
 .vscode
 __pycache__
 env/
-!opp-115/opp115.csv
 opp-115/
+!opp-115/opp115.csv
 
-!acl1010.vec
 acl-1010/
+!acl1010.vec
