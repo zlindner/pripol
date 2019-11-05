@@ -1,7 +1,7 @@
 import numpy as np
 from opp115 import DATA_PRACTICES
 from keras.models import Sequential 
-from keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, LSTM, Dense, Bidirectional, MaxPooling1D,
+from keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, LSTM, Dense, Bidirectional, MaxPooling1D
 from keras.optimizers import Adam, Nadam, RMSprop
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
