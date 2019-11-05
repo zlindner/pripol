@@ -1,2 +1,0 @@
-google news vs acl vectors => acl performs better and takes less time to load / train
-non-static => worse than static
