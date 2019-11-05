@@ -6,7 +6,10 @@
 __pycache__
 env/
 opp-115/*
-!opp-115/opp115.csv
+#!opp-115/opp115.csv
 
 acl-1010/*
-!acl1010.vec
+#!acl1010.vec
+
+models.txt
+requirements.txt

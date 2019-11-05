@@ -29,19 +29,21 @@ y = pd.get_dummies(data['data_practice']).values # net
 #y = data['data_practice'].values # classical
 
 params = {
-    'memory_dim': [32, 64, 96, 128, 156, 256],
-    'embedding_dropout': [None, 0.5],
-    'lstm_dropout': [None, 0.5]
+    'memory_dim': [100],
+    'embedding_dropout': [0.0, 0.5],
+    'lstm_layers': [1, 2],
+    'lstm_dropout': [0.0, 0.1, 0.25, 0.5],
+    'recurrent_dropout': [0.0, 0.1, 0.25, 0.5],
+    'optimizer': ['adam', 'adam_0.01', 'nadam', 'rmsprop']
 }
 
 net.tune(x, y, 'lstm', params)
 
-#net.evaluate(x, y, 'lstm', {'memory_dim': 150, 'embedding_dropout': 0.5, 'lstm_dropout': 0.5})
-
-'''tokenizer = Tokenizer()
+# tracing back of cnn
+'''
+tokenizer = Tokenizer()
 tokenizer.fit_on_texts(x)
 vocab = tokenizer.word_index
-print('found %s unique tokens' % len(tokenizer.word_index))
 
 x = tokenizer.texts_to_sequences(x)
 x = pad_sequences(x, maxlen=100)
@@ -49,48 +51,32 @@ x = pad_sequences(x, maxlen=100)
 vec = KeyedVectors.load('acl-1010/acl1010.vec', mmap='r')
 matrix = net.init_matrix(vocab, vec)
 
-lstm = net.lstm(matrix, len(vocab) + 1, {'memory_dim': 100})
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=42)
+cnn = net.cnn(matrix, len(vocab) + 1, {})
+# TODO: cnn.fit()
 
-lstm.fit(x, y, batch_size=64, epochs=50)
+dense_outputs = net.get_layer_output(4, cnn, x)
+pooling_outputs = net.get_layer_output(2, cnn, x)
+conv_outputs = net.get_layer_output(1, cnn, x)
+embedding_outputs = net.get_layer_output(0, cnn, x)
 
-y_predict = lstm.predict(x_test)
+for i in range(dense_outputs.shape[0]):
+    dense_output = dense_outputs[i]
+    data_practice = np.argmax(dense_output) # index of largest value in dense layer (predicted data practice)
+    print(data_practice)
 
-y_predict, y_test = np.argmax(y_predict, axis=1), np.argmax(y_test, axis=1)
+    pooling_output = pooling_outputs[i]
+    pooling_largest = np.argmax(pooling_output)
 
-print(classification_report(y_test, y_predict))'''
+    conv_output = conv_outputs[i]
 
-#cnn = net.cnn(matrix, len(vocab) + 1)
+    embedding_output = embedding_outputs[i][pooling_largest]
+    print(embedding_output)
 
-'''e = net.get_layer_output(4, cnn, x)[0]
-print(e) # final layer output
-index = np.argmax(e)
-l = e[index]
-print(l)'''
+    print(vec.most_similar(positive=[embedding_output]))
+    break
+'''
 
-'''d = net.get_layer_output(3, cnn, x)[0]
-print(d)
-print(np.array_split(d, 10)[index])'''
-
-#c = net.get_layer_output(2, cnn, x)[0]
-#print(c)
-#print(net.get_layer_output(2, cnn, x)[0])
-
-'''b = net.get_layer_output(1, cnn, x)[0]
-print(b)
-print(b.shape)'''
-
-#a = net.get_layer_output(0, cnn, x)[0]
-#print(a[10])
-#print(a[0].shape)
-#print(net.get_layer_output(1, cnn, x)[0])
-
-
-'''print(x)
-print(x.shape)
-x = tokenizer.sequences_to_texts(x)'''
-
-
+# classical tuning
 '''
 params = {
     'penalty': ['l2'],
@@ -99,4 +85,46 @@ params = {
 }
 
 classical.tune(x, y, 'lr', params)
+'''
+
+# lstm tuning
+'''
+params = {
+    'memory_dim': [100],
+    'embedding_dropout': [0.0, 0.5],
+    'lstm_layers': [1, 2, 3],
+    'lstm_dropout': [0.0, 0.1, 0.25, 0.5],
+    'recurrent_dropout': [0.0, 0.1, 0.25, 0.5],
+    'optimizer': ['adam', 'adam_0.01', 'nadam', 'rmsprop']
+}
+
+net.tune(x, y, 'lstm', params)
+'''
+
+# bi_lstm tuning
+'''
+params = {
+    'memory_dim': [100],
+    'embedding_dropout': [0.0, 0.5],
+    'lstm_layers': [1, 2, 3],
+    'lstm_dropout': [0.0, 0.1, 0.25, 0.5],
+    'recurrent_dropout': [0.0, 0.1, 0.25, 0.5],
+    'optimizer': ['adam', 'adam_0.01', 'nadam', 'rmsprop']
+}
+
+net.tune(x, y, 'bi_lstm', params)
+'''
+
+# cnn_lstm tuning
+'''
+params = {
+    'memory_dim': [100],
+    'embedding_dropout': [0.0, 0.5],
+    'lstm_layers': [1, 2, 3],
+    'lstm_dropout': [0.0, 0.1, 0.25, 0.5],
+    'recurrent_dropout': [0.0, 0.1, 0.25, 0.5],
+    'optimizer': ['adam', 'adam_0.01', 'nadam', 'rmsprop']
+}
+
+net.tune(x, y, 'cnn_lstm', params)
 '''
