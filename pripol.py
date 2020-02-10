@@ -4,22 +4,30 @@ import string
 import re
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
+from tensorflow.keras.models import load_model
+from cnn import CNN
 
-# TODO add option to show evaluation results
+# TODO add --show_results option
+# TODO add --retrain option
 
 
 @click.command()
-@click.option(
-    '--url',
-    help='URL to the web page containing the privacy policy being analyzed')
-@click.option('--model', help='')
-def cli(url, model):
+@click.option('--url', '-u', help='URL to the web page containing the privacy policy being analyzed.')
+@click.option('--model', '-m', help='The model to use for the coverage analysis. Models currently supported: lstm (Long Short-Term Memory), cnn (Convolutional Neural Network).')
+@click.option('--train', '-t', is_flag=True, help="Train / retrain the model.")
+def cli(url, model, train):
     segments = scrape_policy(url)
+    
+    if train:
+        train_model(model)
+    else:
+        try:
+            load_model(model)
+        except OSError:
+            print('Invalid model name supplied.')
 
 
 def scrape_policy(url):
-    segments = []
-
     try:
         html = requests.get(url)
     except Exception:
@@ -34,6 +42,7 @@ def scrape_policy(url):
     [nav.decompose() for nav in soup('nav')]
 
     paragraphs = soup.find_all('p')
+    segments = []
 
     for p in paragraphs:
         if p.text.strip != '':
@@ -42,9 +51,7 @@ def scrape_policy(url):
             p_text = p_text.decode('ascii')  # ascii bytes => ascii string
             segments.append(p_text)
 
-    print(segments[0])
     segments = clean_policy(segments)
-    print(segments[0])
 
     return segments
 
@@ -67,6 +74,14 @@ def clean_policy(segments):
 
     return segments
 
+def train_model(name):
+    if name == 'cnn':
+        cnn = CNN()
+    elif name == 'lstm':
+        pass
+    else:
+        print('Invalid model name supplied.')
+        exit()
 
 if __name__ == '__main__':
     cli()

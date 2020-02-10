@@ -23,7 +23,7 @@ DATA_PRACTICES = [
 ]
 
 def load(clean_text=True):
-    print('loading dataset...')
+    print('Loading dataset...', end='', flush=True)
 
     if not os.path.exists('opp-115/opp115.csv'):
         generate_dataset().to_csv('opp-115/opp115.csv', sep=',', index=False)
@@ -33,10 +33,12 @@ def load(clean_text=True):
     if clean_text:
         data['text'] = data['text'].apply(clean)
 
+    print('done!')
+
     return data
 
 def generate_dataset():
-    print('generating dataset...')
+    print('Generating dataset...', end='', flush=True)
 
     p = load_policies()
     a = load_annotations()
@@ -44,6 +46,8 @@ def generate_dataset():
     merged = pd.merge(a, p, on=['policy_id', 'segment_id'], how='outer')
     mode = merged.groupby(['policy_id', 'segment_id']).agg(lambda x: x.value_counts().index[0])
     mode.reset_index(inplace=True)
+
+    print('done!')
 
     return mode
 
