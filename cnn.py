@@ -13,8 +13,6 @@ class CNN():
     def __init__(self):
         self.embeddings = self.load_embeddings()
         self.x, self.y, self.matrix = self.load_dataset()
-        self.model = self.create()
-        self.train()
 
     def load_embeddings(self):
         print('Loading word embeddings...', end='', flush=True)
@@ -59,18 +57,19 @@ class CNN():
         return matrix
 
     def create(self):
-        model = Sequential()
-        model.add(Embedding(self.vocab_size, 300, weights=[self.matrix], input_length=100, trainable=False))
-        model.add(Conv1D(100, 3, activation='relu'))
-        model.add(GlobalMaxPooling1D())
-        model.add(Dropout(0.5))
-        model.add(Dense(len(opp115.DATA_PRACTICES), activation='softmax'))
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-        return model
-
+        self.model = Sequential()
+        self.model.add(Embedding(self.vocab_size, 300, weights=[self.matrix], input_length=100, trainable=False))
+        self.model.add(Conv1D(100, 3, activation='relu'))
+        self.model.add(Conv1D(100, 4, activation='relu'))
+        self.model.add(Conv1D(100, 5, activation='relu'))
+        self.model.add(GlobalMaxPooling1D())
+        self.model.add(Dropout(0.5))
+        self.model.add(Dense(len(opp115.DATA_PRACTICES), activation='softmax'))
+        self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     
     def train(self):
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=0, restore_best_weights=True)
         self.model.fit(self.x, self.y, epochs=100, batch_size=32, validation_split=0.1, callbacks=[early_stopping])
+
+    def save(self):
         self.model.save('models/cnn.h5')
