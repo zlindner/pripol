@@ -13,7 +13,7 @@ The academic paper can be found here: .
 
 ## Getting Started
 
-Install the required packackes using requirements.txt
+Install the required packages using requirements.txt
 
 ```
 pip install -r requirements.txt
