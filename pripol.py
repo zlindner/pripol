@@ -14,6 +14,8 @@ from sklearn.metrics import classification_report
 import opp115
 from cnn import CNN
 
+# TODO create data.py for handling loading / creating data
+
 @click.command()
 @click.option('--url', '-u', help='URL to the web page containing the privacy policy being analyzed.')
 @click.option('--name', '-n', help='The model to use for the coverage analysis. Models currently supported: lstm (Long Short-Term Memory), cnn (Convolutional Neural Network).')
