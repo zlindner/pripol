@@ -7,10 +7,6 @@ from nltk.corpus import stopwords
 from tensorflow.keras.models import load_model
 from cnn import CNN
 
-# TODO add --show_results option
-# TODO add --retrain option
-
-
 @click.command()
 @click.option('--url', '-u', help='URL to the web page containing the privacy policy being analyzed.')
 @click.option('--model', '-m', help='The model to use for the coverage analysis. Models currently supported: lstm (Long Short-Term Memory), cnn (Convolutional Neural Network).')
