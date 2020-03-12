@@ -4,7 +4,7 @@
 
 This repository contains the code for my undergraduate research thesis: A Comparative Study of Sequence Classification Models for Privacy Policy Coverage Analysis. Awarded "Best Computer Science Poster" at the [2019 CEPS Undergraduate Poster Session](https://www.uoguelph.ca/ceps/events/2019/08/11th-annual-ceps-undergraduate-poster-session).
 
-The academic paper can be found [here](https://github.com/zlindner/pripol/blob/master/Paper.pdf).
+The academic paper can be found [here](https://arxiv.org/abs/2003.04972).
 
 ## Built With
 
