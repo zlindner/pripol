@@ -33,3 +33,7 @@ Options:
                         the model.
     -h, --help          Show help.
 ```
+
+## TODO
+
+-   Create a frontend that displays the website's privacy policy along with the generated segment annotations
