@@ -1,12 +1,11 @@
 # files
 .DS_Store
 
-# temp / old files
-classical.py
-main_old.py
-net.py
-
 # directories
 .vscode
 __pycache__
-env/
+env
+
+# client
+client/node_modules
+client/build

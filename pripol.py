@@ -39,7 +39,6 @@ def cli(url, name, train):
     for i, segment in enumerate(segments):
         print('%s: %s' % (segment, opp115.DATA_PRACTICES[y_classes[i]]))
     
-
 def scrape_policy(url):
     try:
         html = requests.get(url)
@@ -66,7 +65,6 @@ def scrape_policy(url):
             segments.append(p_text)
 
     return segments
-
 
 def clean_policy(segments):
     clean = []
