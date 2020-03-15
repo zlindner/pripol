@@ -1,5 +1,8 @@
 # files
 .DS_Store
+classical.py
+main_old.py
+net.py
 
 # directories
 .vscode

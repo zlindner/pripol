@@ -1,16 +1,12 @@
 import React from 'react';
 import GlobalStyle from './globalStyle';
+import Landing from './components/landing';
 
 const App = () => {
     return (
         <React.Fragment>
-            <div>
-                <h1>Pripol</h1>
-
-                <input type='text' placeholder='' />
-            </div>
-
             <GlobalStyle />
+            <Landing />
         </React.Fragment>
     );
 };
