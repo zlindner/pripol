@@ -1,14 +1,8 @@
 # files
 .DS_Store
-classical.py
-main_old.py
-net.py
 
 # directories
 .vscode
 __pycache__
 env
-
-# client
-client/node_modules
-client/build
+node_modules
