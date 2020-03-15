@@ -50,7 +50,7 @@ def scrape_policy(url):
     soup = BeautifulSoup(html.text, features='html.parser')
 
     [head.decompose() for head in soup('head')]
-    [header.decompose() for footer in soup('header')]
+    [header.decompose() for header in soup('header')]
     [footer.decompose() for footer in soup('footer')]
     [script.decompose() for script in soup('script')]
     [nav.decompose() for nav in soup('nav')]
