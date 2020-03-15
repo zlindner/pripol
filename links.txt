@@ -1,0 +1,2 @@
+https://github.com/vikpe/react-webpack-typescript-starter
+https://github.com/alexkuz/flask-react-boilerplate
