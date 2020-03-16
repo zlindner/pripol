@@ -5,6 +5,7 @@
     "scripts": {
         "start": "webpack-dev-server --config=config/webpack/dev.js",
         "build": "webpack -p --config=config/webpack/prod.js",
+        "gunicorn": "gunicorn $GUNICORN_PARAMS --chdir server -c config/gunicorn.py app:app",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
