@@ -29,7 +29,12 @@ const Search = () => {
     const [policyURL, setPolicyURL] = useState('');
 
     const startAnalysis = () => {
-        console.log(policyURL);
+        axios
+            .post('/load-policy', { url: policyURL })
+            .then(res => {
+                console.log(res);
+            })
+            .catch(err => console.error(err));
     };
 
     return (
