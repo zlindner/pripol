@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
-import { ReactComponent as Analyze } from '../assets/analyze.svg';
+import Analyze from '../assets/analyze.svg';
 
 const Container = styled.div`
     width: 800px;
@@ -46,7 +46,7 @@ const Search = () => {
                 }}
             />
 
-            <Analyze onClick={startAnalysis} />
+            <Analyze />
         </Container>
     );
 };

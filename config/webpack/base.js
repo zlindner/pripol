@@ -1,9 +1,12 @@
+const { resolve } = require('path');
+const { CheckerPlugin } = require('awesome-typescript-loader');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.jsx']
     },
+    context: resolve(__dirname, '../../client/src'),
     module: {
         rules: [
             {
@@ -14,15 +17,12 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 use: ['babel-loader', 'awesome-typescript-loader']
+            },
+            {
+                test: /\.svg$/,
+                use: ['babel-loader', 'react-svg-loader']
             }
         ]
     },
-    plugins: [new HtmlWebpackPlugin()],
-    externals: {
-        react: 'React',
-        'react-dom': 'ReactDOM'
-    },
-    performance: {
-        hints: false
-    }
+    plugins: [new CheckerPlugin(), new HtmlWebpackPlugin({ template: 'index.html' })]
 };

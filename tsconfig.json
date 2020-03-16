@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "outDir": "./dist/",
         "target": "es6",
         "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": true,
@@ -12,8 +13,10 @@
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "noEmit": true,
         "jsx": "react"
     },
-    "include": ["./client/src"]
+    "include": ["./client/src/**/*", "./client/index.d.ts"],
+    "awesomeTypescriptLoaderOptions": {
+        "reportFiles": ["./client/src/**/*"]
+    }
 }
