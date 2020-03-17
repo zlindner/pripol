@@ -30,7 +30,7 @@ const Search = () => {
 
     const startAnalysis = () => {
         axios
-            .post('/load-policy', { url: policyURL })
+            .post('/policy/load', { url: policyURL })
             .then(res => {
                 console.log(res);
             })

@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request
-
-# TODO start using blueprints
+from blueprints import policy
 
 def create_app():
     app = Flask(__name__, template_folder='../dist', static_folder='../dist/js')
 
+    register_blueprints(app)
     register_routes(app)
 
     return app
@@ -15,13 +15,8 @@ def register_routes(app):
     def serve(path):
         return render_template('index.html')
 
-    @app.route('/load-policy', methods=['POST'])
-    def load_policy():
-        url = request.get_json()['url']
-
-        print(url)
-
-        return '', 200
+def register_blueprints(app):
+    app.register_blueprint(policy.bp)
 
 app = create_app()
 
