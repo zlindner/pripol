@@ -25,14 +25,21 @@ const Container = styled.div`
     }
 `;
 
-const Search = () => {
+type Props = {
+    onStartAnalysis: Function;
+};
+
+const Search = (props: Props) => {
     const [policyURL, setPolicyURL] = useState('');
 
-    const startAnalysis = () => {
+    const loadPolicy = () => {
+        console.log(policyURL);
+
         axios
             .post('/policy/load', { url: policyURL })
             .then(res => {
                 console.log(res);
+                props.onStartAnalysis(res.data.policy);
             })
             .catch(err => console.error(err));
     };
@@ -46,12 +53,12 @@ const Search = () => {
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPolicyURL(event.target.value)}
                 onKeyPress={(event: React.KeyboardEvent<HTMLInputElement>) => {
                     if (event.key === 'Enter') {
-                        startAnalysis();
+                        loadPolicy();
                     }
                 }}
             />
 
-            <Analyze />
+            <Analyze onClick={loadPolicy} />
         </Container>
     );
 };

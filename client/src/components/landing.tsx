@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 import Search from './search';
+import Analysis from './analysis';
 
 const Container = styled.div`
     width: 100vw;
@@ -13,9 +15,27 @@ const Container = styled.div`
 `;
 
 const Landing = () => {
+    const [loading, setLoading] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+
+    const onLoad = () => {};
+
+    const onAnalyze = (policy: string[]) => {
+        setAnalyzing(true);
+
+        axios
+            .post('/model/predict', { policy })
+            .then(res => {
+                console.log(res);
+            })
+            .catch(err => console.error);
+    };
+
     return (
         <Container>
-            <Search />
+            <Search onStartAnalysis={onStartAnalysis} />
+
+            {analyzing && <Analysis />}
         </Container>
     );
 };

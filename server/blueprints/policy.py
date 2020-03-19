@@ -1,3 +1,6 @@
+import requests
+import string
+import re
 from flask import Blueprint, request, jsonify
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
@@ -22,7 +25,7 @@ def load_policy():
     # clean segments
     policy = clean_policy(segments)
 
-    return '', 200
+    return jsonify({ 'policy': policy }), 200
 
 def parse_html(html):
     soup = BeautifulSoup(html.text, features='html.parser')
