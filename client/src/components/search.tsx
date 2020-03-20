@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import Analyze from '../assets/analyze.svg';
 
@@ -6,6 +6,7 @@ const Container = styled.div`
     width: 800px;
     display: flex;
     align-items: center;
+    margin-top: auto;
     padding: 10px 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 
@@ -25,27 +26,26 @@ const Container = styled.div`
 `;
 
 type Props = {
+    setURL: Function;
     onLoad: Function;
 };
 
 const Search = (props: Props) => {
-    const [url, setURL] = useState('');
-
     return (
         <Container>
             <input
                 type='text'
                 placeholder="Analyze a website's privacy policy"
                 autoFocus={true}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setURL(event.target.value)}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => props.setURL(event.target.value)}
                 onKeyPress={(event: React.KeyboardEvent<HTMLInputElement>) => {
                     if (event.key === 'Enter') {
-                        props.onLoad(url);
+                        props.onLoad();
                     }
                 }}
             />
 
-            <Analyze onClick={() => props.onLoad(url)} />
+            <Analyze onClick={() => props.onLoad()} />
         </Container>
     );
 };
