@@ -18,7 +18,20 @@ const Landing = () => {
     const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
 
-    const onLoad = () => {};
+    const onLoad = (url: string) => {
+        setLoading(true);
+
+        axios
+            .post('/policy/load', { url })
+            .then(res => {
+                setLoading(false);
+                onAnalyze(res.data.policy);
+            })
+            .catch(err => {
+                setLoading(false);
+                console.error(err);
+            });
+    };
 
     const onAnalyze = (policy: string[]) => {
         setAnalyzing(true);
@@ -27,13 +40,17 @@ const Landing = () => {
             .post('/model/predict', { policy })
             .then(res => {
                 console.log(res);
+                setAnalyzing(false);
             })
-            .catch(err => console.error);
+            .catch(err => {
+                setAnalyzing(false);
+                console.error(err);
+            });
     };
 
     return (
         <Container>
-            <Search onStartAnalysis={onStartAnalysis} />
+            <Search onLoad={onLoad} />
 
             {analyzing && <Analysis />}
         </Container>
