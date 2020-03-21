@@ -6,8 +6,8 @@ const Container = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: auto;
-    margin-bottom: 50px;
+    position: absolute;
+    margin-top: 350px;
 
     & span {
         padding-top: 20px;
@@ -15,10 +15,12 @@ const Container = styled.div`
 `;
 
 type Props = {
+    loading: boolean;
+    analyzing: boolean;
     url: string;
 };
 
-const Loading = (props: Props) => {
+const Loader = (props: Props) => {
     const matches = props.url.match(/^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i);
     const domain = matches && matches[1]; // domain will be null if no match is found
 
@@ -26,9 +28,12 @@ const Loading = (props: Props) => {
         <Container>
             <SyncLoader size={10} />
 
-            <span>Loading privacy policy from {domain}</span>
+            <span>
+                {props.loading && 'Loading'}
+                {props.analyzing && 'Analyzing'} privacy policy from {domain}
+            </span>
         </Container>
     );
 };
 
-export default Loading;
+export default Loader;

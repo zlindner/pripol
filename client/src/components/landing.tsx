@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import Search from './search';
-import Loading from './loading';
+import Loader from './loader';
 import Analysis from './analysis';
 
 const Container = styled.div`
@@ -17,7 +17,7 @@ const Container = styled.div`
 
 const Landing = () => {
     const [url, setURL] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
 
     const onLoad = () => {
@@ -54,8 +54,7 @@ const Landing = () => {
         <Container>
             <Search setURL={setURL} onLoad={onLoad} />
 
-            {loading && <Loading url={url} />}
-            {analyzing && <Analysis />}
+            {(loading || analyzing) && <Loader loading={loading} analyzing={analyzing} url={url} />}
         </Container>
     );
 };
