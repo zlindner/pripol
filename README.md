@@ -1,6 +1,6 @@
 # Pripol
 
-> Privacy policy coverage analyiss using deep neural networks
+> Privacy policy coverage analyis using deep neural networks
 
 Pripol allows users to perform a coverage anaylsis of a website's privacy policy through the use of a simple cli. The annotation scheme and dataset is based off of the [OPP-115 Corpus](https://usableprivacy.org/static/files/swilson_acl_2016.pdf).
 
