@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request
-from blueprints import policy
+from flask import Flask, render_template
+from blueprints import policy, model
 
 def create_app():
     app = Flask(__name__, template_folder='../dist', static_folder='../dist/js')
@@ -17,6 +17,7 @@ def register_routes(app):
 
 def register_blueprints(app):
     app.register_blueprint(policy.bp)
+    app.register_blueprint(model.bp)
 
 app = create_app()
 

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import Analyze from '../assets/analyze.svg';
 
 const Container = styled.div`
@@ -25,33 +24,27 @@ const Container = styled.div`
     }
 `;
 
-const Search = () => {
-    const [policyURL, setPolicyURL] = useState('');
+type Props = {
+    setURL: Function;
+    onLoad: Function;
+};
 
-    const startAnalysis = () => {
-        axios
-            .post('/policy/load', { url: policyURL })
-            .then(res => {
-                console.log(res);
-            })
-            .catch(err => console.error(err));
-    };
-
+const Search = (props: Props) => {
     return (
         <Container>
             <input
                 type='text'
                 placeholder="Analyze a website's privacy policy"
                 autoFocus={true}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPolicyURL(event.target.value)}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => props.setURL(event.target.value)}
                 onKeyPress={(event: React.KeyboardEvent<HTMLInputElement>) => {
                     if (event.key === 'Enter') {
-                        startAnalysis();
+                        props.onLoad();
                     }
                 }}
             />
 
-            <Analyze />
+            <Analyze onClick={() => props.onLoad()} />
         </Container>
     );
 };
