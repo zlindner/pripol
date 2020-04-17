@@ -8,6 +8,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dropout, Dense
 from tensorflow.keras.callbacks import EarlyStopping
 
+
 class CNN():
 
     def __init__(self):
@@ -18,7 +19,7 @@ class CNN():
         print('Loading word embeddings...', end='', flush=True)
         embeddings = KeyedVectors.load('acl-1010/acl1010.vec', mmap='r')
         print('done!')
-        
+
         return embeddings
 
     def load_dataset(self):
@@ -37,7 +38,7 @@ class CNN():
 
         x = tokenizer.texts_to_sequences(x)
         x = pad_sequences(x, maxlen=100, padding='post')
-        
+
         return x, vocab
 
     def init_matrix(self, vocab, vec):
@@ -58,7 +59,12 @@ class CNN():
 
     def create(self):
         self.model = Sequential()
-        self.model.add(Embedding(self.vocab_size, 300, weights=[self.matrix], input_length=100, trainable=False))
+        self.model.add(
+            Embedding(self.vocab_size,
+                      300,
+                      weights=[self.matrix],
+                      input_length=100,
+                      trainable=False))
         self.model.add(Conv1D(100, 3, activation='relu'))
         self.model.add(Conv1D(100, 4, activation='relu'))
         self.model.add(Conv1D(100, 5, activation='relu'))
@@ -66,10 +72,18 @@ class CNN():
         self.model.add(Dropout(0.5))
         self.model.add(Dense(len(opp115.DATA_PRACTICES), activation='softmax'))
         self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    
+
     def train(self):
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=0, restore_best_weights=True)
-        self.model.fit(self.x, self.y, epochs=100, batch_size=32, validation_split=0.1, callbacks=[early_stopping])
+        early_stopping = EarlyStopping(monitor='val_loss',
+                                       patience=5,
+                                       verbose=0,
+                                       restore_best_weights=True)
+        self.model.fit(self.x,
+                       self.y,
+                       epochs=100,
+                       batch_size=32,
+                       validation_split=0.1,
+                       callbacks=[early_stopping])
 
     def save(self):
-        self.model.save('models/cnn.h5')
+        self.model.save('model/cnn.h5')

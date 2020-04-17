@@ -22,15 +22,16 @@ type Props = {
 
 const Loader = (props: Props) => {
     const matches = props.url.match(/^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i);
-    const domain = matches && matches[1]; // domain will be null if no match is found
+    const domain = matches && matches[1];
 
     return (
         <Container>
             <SyncLoader size={10} />
 
             <span>
-                {props.loading && 'Loading'}
-                {props.analyzing && 'Analyzing'} privacy policy from {domain}
+                {props.loading && 'Loading '}
+                {props.analyzing && 'Analyzing '}
+                privacy policy from {domain}
             </span>
         </Container>
     );

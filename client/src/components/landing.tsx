@@ -15,23 +15,46 @@ const Container = styled.div`
     padding: 40px;
 `;
 
+const Name = styled.a`
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    font-size: 18px;
+    font-weight: 700;
+`;
+
+const Error = styled.span`
+    position: absolute;
+    margin-top: 350px;
+    color: #909;
+    font-size: 16px;
+    user-select: none;
+`;
+
 const Landing = () => {
     const [url, setURL] = useState('');
     const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
+    const [error, setError] = useState('');
 
     const onLoad = () => {
+        if (url.length <= 0) {
+            setError('Invalid privacy policy url');
+            return;
+        }
+
+        setError('');
         setLoading(true);
 
         axios
             .post('/policy/load', { url })
-            .then(res => {
+            .then((res) => {
                 setLoading(false);
                 onAnalyze(res.data.policy);
             })
-            .catch(err => {
+            .catch((err) => {
                 setLoading(false);
-                console.error(err);
+                setError('An error occurred while loading privacy policy');
             });
     };
 
@@ -40,21 +63,26 @@ const Landing = () => {
 
         axios
             .post('/model/predict', { policy })
-            .then(res => {
+            .then((res) => {
                 console.log(res);
                 setAnalyzing(false);
             })
-            .catch(err => {
+            .catch((err) => {
                 setAnalyzing(false);
-                console.error(err);
+                setError('An error occurred while analyzing privacy policy');
             });
     };
 
+    const hasError = error.length > 0;
+
     return (
         <Container>
+            <Name href='/'>pripol.</Name>
+
             <Search setURL={setURL} onLoad={onLoad} />
 
-            {(loading || analyzing) && <Loader loading={loading} analyzing={analyzing} url={url} />}
+            {hasError && <Error>{error}</Error>}
+            {!hasError && (loading || analyzing) && <Loader loading={loading} analyzing={analyzing} url={url} />}
         </Container>
     );
 };

@@ -11,4 +11,17 @@ export default createGlobalStyle`
         font-family: 'Inter', sans-serif;
         background-color: #ffffff;
     }
+
+    a {
+        color: #000000;
+        text-decoration: none;
+    }
+
+    a:active {
+        color: #000000;
+    }
+
+    a:visited {
+        color: #000000;
+    }
 `;

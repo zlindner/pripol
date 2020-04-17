@@ -3,7 +3,8 @@ import styled from 'styled-components';
 import Analyze from '../assets/analyze.svg';
 
 const Container = styled.div`
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
     display: flex;
     align-items: center;
     padding: 10px 20px;
@@ -13,7 +14,7 @@ const Container = styled.div`
         width: calc(100% - 40px);
         height: 50px;
         margin-right: 20px;
-        font-size: 24px;
+        font-size: 20px;
         border: none;
     }
 

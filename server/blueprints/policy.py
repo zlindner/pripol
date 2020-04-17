@@ -7,17 +7,18 @@ from nltk.corpus import stopwords
 
 bp = Blueprint('policy', __name__, url_prefix='/policy')
 
+
 @bp.route('/load', methods=['POST'])
 def load_policy():
     url = request.get_json()['url']
 
     if not url:
-        return 'Invalid url', 403
+        return '', 403
 
     try:
         html = requests.get(url)
     except Exception:
-        return 'Invalid url', 403
+        return '', 403
 
     # parse segments from policy html
     segments = parse_html(html)
@@ -25,7 +26,8 @@ def load_policy():
     # clean segments
     policy = clean_policy(segments)
 
-    return jsonify({ 'policy': policy }), 200
+    return jsonify({'policy': policy}), 200
+
 
 def parse_html(html):
     soup = BeautifulSoup(html.text, features='html.parser')
@@ -44,13 +46,14 @@ def parse_html(html):
             p_text = p.text
 
             # unicode to ascii bytes
-            p_text = p_text.encode('ascii', 'ignore')  
+            p_text = p_text.encode('ascii', 'ignore')
 
             # ascii bytes => ascii string
-            p_text = p_text.decode('ascii')  
+            p_text = p_text.decode('ascii')
             segments.append(p_text)
 
     return segments
+
 
 def clean_policy(segments):
     clean = []

@@ -1,32 +1,48 @@
-from flask import Blueprint, request, session
+from flask import Blueprint, request, jsonify
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 bp = Blueprint('model', __name__, url_prefix='/model')
 
-model = load_model('./server/models/cnn.h5')
+model = load_model('./server/model/cnn.h5')
 
-@bp.route('/predict', methods=['GET'])
+DATA_PRACTICES = [
+    'first_party_collection_use', 'third_party_sharing_collection', 'user_choice_control',
+    'international_specific_audiences', 'data_security', 'user_access_edit_deletion',
+    'policy_change', 'data_retention', 'do_not_track'
+]
+
+
+# TODO change to GET, somehow pass policy from policy.load()
+@bp.route('/predict', methods=['POST'])
 def predict():
-    print(session['policy'])
-    
-    # convert list of policy segments to sequences
-    #x, vocab = init_sequences(policy)
+    policy = request.get_json()['policy']
+
+    if not policy:
+        return '', 403
+
+    # policy is now a list of each segment's text
+    # convert text -> sequences
+    seq = policy_to_sequences(policy)
 
     # predict the data practice for each policy segment
-    #y = model.predict(x)
+    y_pred = model.predict(seq)
+    y_classes = y_pred.argmax(axis=-1)
 
-    #print(y)
+    predictions = []
 
-    return '', 200
+    for i, segment in enumerate(policy):
+        predictions.append({'segment': segment, 'data_practice': DATA_PRACTICES[y_classes[i]]})
 
-def init_sequences(x):
+    return jsonify({'predictions': predictions}), 200
+
+
+def policy_to_sequences(policy):
     tokenizer = Tokenizer()
-    tokenizer.fit_on_texts(x)
-    vocab = tokenizer.word_index
+    tokenizer.fit_on_texts(policy)
 
-    x = tokenizer.texts_to_sequences(x)
-    x = pad_sequences(x, maxlen=100, padding='post')
-    
-    return x, vocab
+    seq = tokenizer.texts_to_sequences(policy)
+    seq = pad_sequences(seq, maxlen=100, padding='post')
+
+    return seq

@@ -7,20 +7,11 @@ from nltk.corpus import stopwords
 from ast import literal_eval
 
 DATA_PRACTICES = [
-        'first_party_collection_use',
-        'third_party_sharing_collection',
-        # 'introductory_generic',
-        'user_choice_control',
-        'international_specific_audiences',
-        'data_security',
-        # 'privacy_contact_information',
-        'user_access_edit_deletion',
-        # 'practice_not_covered',
-        'policy_change',
-        'data_retention',
-        'do_not_track',
-        #'other'
+    'first_party_collection_use', 'third_party_sharing_collection', 'user_choice_control',
+    'international_specific_audiences', 'data_security', 'user_access_edit_deletion',
+    'policy_change', 'data_retention', 'do_not_track'
 ]
+
 
 def load(clean_text=True):
     print('Loading dataset...', end='', flush=True)
@@ -29,13 +20,14 @@ def load(clean_text=True):
         generate_dataset().to_csv('opp-115/opp115.csv', sep=',', index=False)
 
     data = pd.read_csv('opp-115/opp115.csv', sep=',', header=0)
-    
+
     if clean_text:
         data['text'] = data['text'].apply(clean)
 
     print('done!')
 
     return data
+
 
 def generate_dataset():
     print('Generating dataset...', end='', flush=True)
@@ -50,6 +42,7 @@ def generate_dataset():
     print('done!')
 
     return mode
+
 
 def load_policies():
     policies = []
@@ -71,11 +64,18 @@ def load_policies():
 
     return p
 
+
 def load_annotations():
     annotations = []
 
     for f in glob('opp-115/annotations/*.csv'):
-        a = pd.read_csv(f, sep=',', header=None, names=['annotation_id', 'batch_id', 'annotator_id', 'policy_id', 'segment_id', 'data_practice', 'attributes', 'date', 'url'])
+        a = pd.read_csv(f,
+                        sep=',',
+                        header=None,
+                        names=[
+                            'annotation_id', 'batch_id', 'annotator_id', 'policy_id', 'segment_id',
+                            'data_practice', 'attributes', 'date', 'url'
+                        ])
         a['policy_id'] = f[20:-4].split('_')[0]
         a.drop(['annotation_id', 'batch_id', 'annotator_id', 'date', 'url'], axis=1, inplace=True)
         annotations.append(a)
@@ -84,6 +84,7 @@ def load_annotations():
     a.reset_index(inplace=True, drop=True)
 
     return a
+
 
 def clean(text):
     stop = set(stopwords.words('english'))
@@ -100,9 +101,11 @@ def clean(text):
 
     return text.strip()
 
+
 def practice_counts(data):
     # TODO
     pass
+
 
 def generate_attribute_distribution(data):
     with open('opp-115/attribute_dist.txt', 'w') as f:
@@ -118,6 +121,7 @@ def generate_attribute_distribution(data):
                     f.write('\t\t%s: %s\n' % (val, count))
 
             f.write('\n')
+
 
 def get_attribute_counts(data):
     attributes = data['attributes'].to_list()
