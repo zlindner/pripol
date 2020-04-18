@@ -10,6 +10,7 @@ export default createGlobalStyle`
     body {
         font-family: 'Inter', sans-serif;
         background-color: #ffffff;
+        user-select: none;
     }
 
     a {

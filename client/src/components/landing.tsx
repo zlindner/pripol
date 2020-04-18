@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import axios from 'axios';
 import Search from './search';
 import Loader from './loader';
-import Analysis from './analysis';
 
 const Container = styled.div`
     width: 100vw;
@@ -31,8 +30,15 @@ const Error = styled.span`
     user-select: none;
 `;
 
-const Landing = () => {
+type Props = {
+    showAnalysis: Function;
+};
+
+const Landing = (props: Props) => {
+    // user-entered policy url
     const [url, setURL] = useState('');
+
+    // states
     const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
     const [error, setError] = useState('');
@@ -66,6 +72,8 @@ const Landing = () => {
             .then((res) => {
                 console.log(res);
                 setAnalyzing(false);
+
+                props.showAnalysis(res.data);
             })
             .catch((err) => {
                 setAnalyzing(false);
