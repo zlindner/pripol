@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Popover, { ArrowContainer } from 'react-tiny-popover';
 import styled from 'styled-components';
+import ShowIcon from '../assets/show.svg';
 
 const Container = styled.div`
     width: 300px;
@@ -13,6 +14,7 @@ const Container = styled.div`
 const Name = styled.span`
     width: 250px;
     display: inline-block;
+    font-weight: 700;
 `;
 
 const About = styled.div`
@@ -36,9 +38,32 @@ const AboutPopover = styled.div`
     background-color: #ccc;
 `;
 
+const Show = styled.div`
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 20px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 12px;
+
+    &:hover {
+        color: #1e88e5;
+    }
+
+    & > svg {
+        width: 10px;
+        height: 10px;
+        margin-left: 10px;
+    }
+`;
+
 type Props = {
     name: string;
     about: string;
+    onShow: Function;
 };
 
 const DataPractice = (props: Props) => {
@@ -54,15 +79,24 @@ const DataPractice = (props: Props) => {
                 align='start'
                 onClickOutside={() => setShowAbout(false)}
                 content={({ position, targetRect, popoverRect }) => (
-                    <ArrowContainer position={position} targetRect={targetRect} popoverRect={popoverRect} arrowColor={'#ccc'} arrowSize={10}>
+                    <ArrowContainer
+                        position={position}
+                        targetRect={targetRect}
+                        popoverRect={popoverRect}
+                        arrowColor={'#ccc'}
+                        arrowSize={10}>
                         <AboutPopover>{props.about}</AboutPopover>
                     </ArrowContainer>
-                )}
-            >
+                )}>
                 <About onMouseOver={() => setShowAbout(true)} onMouseLeave={() => setShowAbout(false)}>
                     ?
                 </About>
             </Popover>
+
+            <Show onClick={(_) => props.onShow()}>
+                Show segments
+                <ShowIcon />
+            </Show>
         </Container>
     );
 };

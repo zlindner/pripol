@@ -11,6 +11,7 @@ export default createGlobalStyle`
         font-family: 'Inter', sans-serif;
         background-color: #ffffff;
         user-select: none;
+        overflow-x: hidden;
     }
 
     a {
@@ -24,5 +25,9 @@ export default createGlobalStyle`
 
     a:visited {
         color: #000000;
+    }
+
+    ul {
+        list-style-type: none;
     }
 `;

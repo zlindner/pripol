@@ -1,9 +1,17 @@
+import tensorflow as tf
+
 from flask import Blueprint, request, jsonify
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
+
 bp = Blueprint('model', __name__, url_prefix='/model')
+
+# initialize tf for use with gpu
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.compat.v1.InteractiveSession(config=config)
 
 model = load_model('./server/model/cnn.h5')
 
@@ -35,8 +43,7 @@ def predict():
     for i, segment in enumerate(policy):
         predictions.append({'segment': segment, 'data_practice': DATA_PRACTICES[y_classes[i]]})
 
-    return jsonify({'predictions': predictions}), 200
-
+    return jsonify({'predictions': predictions}), 200    
 
 def policy_to_sequences(policy):
     tokenizer = Tokenizer()

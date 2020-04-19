@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, Ref } from 'react';
 import styled from 'styled-components';
 import DataPractice from './dataPractice';
+import Viewer from './viewer';
 
 const Container = styled.div`
     width: 100vw;
     height: 100vh;
-    padding: 40px;
-
-    & > span {
-        font-size: 18px;
-    }
+    display: flex;
+    justify-content: center;
+    padding: 150px 40px;
+    position: relative;
+    transition: opacity 1s;
 `;
 
 const Grid = styled.div`
+    width: 1200px;
+    height: 350px;
     display: grid;
     grid-template-columns: repeat(auto-fill, 300px);
     column-gap: 25px;
@@ -20,24 +23,52 @@ const Grid = styled.div`
     justify-content: center;
     align-items: center;
     position: relative;
-    top: 50%;
-    transform: translateY(-50%);
+
+    @media only screen and (max-width: 1407px) {
+        width: 512px;
+    }
+
+    @media only screen and (min-width: 1408px) and (max-width: 1678px) {
+        width: 929px;
+    }
+`;
+
+const Filler = styled.div`
+    width: 300px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #000;
+    color: #fff;
+    font-size: 18px;
+    text-align: right;
 `;
 
 interface ISegment {
     segment: string;
-    data_practice: string;
+    data_practice: string; // TODO remove
+}
+
+interface IDataPractice {
+    name: string;
+    about: string;
+    segments: ISegment[];
 }
 
 type Props = {
     segments: ISegment[];
 };
 
-const dataPractices = [
+const initialDataPractices: IDataPractice[] = [
     {
         name: 'First Party Collection/Use',
         about: 'How and why a service provider collects user information.',
-        segments: [],
+        segments: [
+            { segment: "henry's petit innis", data_practice: '' },
+            { segment: "henry's petit takis", data_practice: '' },
+        ],
     },
     {
         name: 'Third Party Sharing/Collection',
@@ -51,7 +82,7 @@ const dataPractices = [
     },
     {
         name: 'User Access, Edit, & Deletion',
-        about: 'If and how user may access, edit, or delete their information.',
+        about: 'If and how users may access, edit, or delete their information.',
         segments: [],
     },
     {
@@ -81,8 +112,21 @@ const dataPractices = [
     },
 ];
 
+const scrollToRef = (ref: React.RefObject<HTMLDivElement>) =>
+    window.scrollTo({
+        top: ref.current!.offsetTop,
+        behavior: 'smooth',
+    });
+
 const Analysis = (props: Props) => {
+    const [opacity, setOpacity] = useState(0);
+    const [viewing, setViewing] = useState<IDataPractice | null>(null);
+    const [closing, setClosing] = useState(false);
+    const [dataPractices] = useState<IDataPractice[]>(initialDataPractices);
+    const ref = useRef(null);
+
     useEffect(() => {
+        // process segments
         props.segments.forEach((segment) => {
             /*let name = segment.data_practice.split('_').
 
@@ -94,17 +138,49 @@ const Analysis = (props: Props) => {
         });
 
         console.log(props.segments);
+
+        // scroll to analysis and make opaque
+        if (opacity !== 1) {
+            scrollToRef(ref);
+            setOpacity(1);
+        }
     });
 
-    return (
-        <Container>
-            <span>Detected data practices for {props.segments.length} segments.</span>
+    // when the viewer is closing / closed grid width is handled by above media queries
+    const gridStyle = viewing !== null || closing ? {} : { width: '100%', maxWidth: '1200px' };
 
-            <Grid>
+    const numSegments = props.segments.length;
+    const numSegmentsColour = numSegments === 0 ? '#e53935' : '#1e88e5';
+
+    return (
+        <Container style={{ opacity }} ref={ref}>
+            <Grid style={gridStyle}>
+                <Filler>
+                    <span>
+                        Detected data practices for
+                        <span style={{ color: numSegmentsColour }}>{` ${numSegments} `}</span>
+                        segments.
+                    </span>
+                </Filler>
+
                 {dataPractices.map((d) => (
-                    <DataPractice name={d.name} about={d.about} />
+                    <DataPractice name={d.name} about={d.about} onShow={() => setViewing(d)} />
                 ))}
             </Grid>
+
+            {viewing !== null && (
+                <Viewer
+                    dataPractice={viewing}
+                    onHide={() => {
+                        setClosing(true);
+
+                        setTimeout(() => {
+                            setClosing(false);
+                            setViewing(null);
+                        }, 200);
+                    }}
+                />
+            )}
         </Container>
     );
 };

@@ -25,7 +25,7 @@ const Name = styled.a`
 const Error = styled.span`
     position: absolute;
     margin-top: 350px;
-    color: #909;
+    color: #555;
     font-size: 16px;
     user-select: none;
 `;
@@ -70,10 +70,8 @@ const Landing = (props: Props) => {
         axios
             .post('/model/predict', { policy })
             .then((res) => {
-                console.log(res);
                 setAnalyzing(false);
-
-                props.showAnalysis(res.data);
+                props.showAnalysis(res.data.predictions);
             })
             .catch((err) => {
                 setAnalyzing(false);
