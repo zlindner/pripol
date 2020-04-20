@@ -14,7 +14,7 @@ const Container = styled.div`
 `;
 
 const Grid = styled.div`
-    width: 1200px;
+    width: 950px;
     height: 350px;
     display: grid;
     grid-template-columns: repeat(auto-fill, 300px);
@@ -23,13 +23,14 @@ const Grid = styled.div`
     justify-content: center;
     align-items: center;
     position: relative;
+    margin-right: 40px;
 
     @media only screen and (max-width: 1407px) {
-        width: 512px;
+        width: 300px;
     }
 
     @media only screen and (min-width: 1408px) and (max-width: 1678px) {
-        width: 929px;
+        width: 625px;
     }
 `;
 
@@ -54,7 +55,7 @@ interface ISegment {
 interface IDataPractice {
     name: string;
     about: string;
-    segments: ISegment[];
+    segments: string[];
 }
 
 type Props = {
@@ -65,10 +66,7 @@ const initialDataPractices: IDataPractice[] = [
     {
         name: 'First Party Collection/Use',
         about: 'How and why a service provider collects user information.',
-        segments: [
-            { segment: "henry's petit innis", data_practice: '' },
-            { segment: "henry's petit takis", data_practice: '' },
-        ],
+        segments: [],
     },
     {
         name: 'Third Party Sharing/Collection',
@@ -126,25 +124,32 @@ const Analysis = (props: Props) => {
     const ref = useRef(null);
 
     useEffect(() => {
-        // process segments
-        props.segments.forEach((segment) => {
-            /*let name = segment.data_practice.split('_').
-
-            dataPractices.find(d => d.name === segment.data_practice.split('_'))
-
-            if (segment.data_practice === 'policy_change') {
-                dataPractices.find(d => d.name === 'Policy Change')?.segments.
-            }*/
-        });
-
         console.log(props.segments);
+
+        // process segments
+        for (let segment of props.segments) {
+            dataPractices
+                .find((d) => {
+                    let practice = d.name.toLowerCase();
+                    practice = practice.replace(/,/g, ''); // , -> blank
+                    practice = practice.replace(/&/g, ''); // & -> blank
+                    practice = practice.replace(/\//g, ' '); // / -> space
+                    practice = practice.replace(/ +/g, ' ');
+                    practice = practice.replace(/\ /g, '_');
+
+                    return segment.data_practice === practice;
+                })
+                ?.segments.push(segment.segment);
+        }
+
+        console.log(dataPractices);
 
         // scroll to analysis and make opaque
         if (opacity !== 1) {
             scrollToRef(ref);
             setOpacity(1);
         }
-    });
+    }, []);
 
     // when the viewer is closing / closed grid width is handled by above media queries
     const gridStyle = viewing !== null || closing ? {} : { width: '100%', maxWidth: '1200px' };

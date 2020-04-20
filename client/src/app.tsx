@@ -10,7 +10,7 @@ interface ISegment {
 
 const App = () => {
     const [segments, setSegments] = useState<ISegment[] | []>([]);
-    const [analyzed, setAnalyzed] = useState(true);
+    const [analyzed, setAnalyzed] = useState(false);
 
     const showAnalysis = (segments: ISegment[]) => {
         setSegments(segments);

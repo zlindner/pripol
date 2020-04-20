@@ -46,15 +46,10 @@ const Hide = styled.div`
     }
 `;
 
-interface ISegment {
-    segment: string;
-    data_practice: string;
-}
-
 interface IDataPractice {
     name: string;
     about: string;
-    segments: ISegment[];
+    segments: string[];
 }
 
 type Props = {
@@ -93,8 +88,8 @@ const Viewer = (props: Props) => {
 
             <ul>
                 {props.dataPractice.segments.map((s) => (
-                    <li>
-                        <span>{s.segment}</span>
+                    <li style={{ marginBottom: 20 }}>
+                        <span>{s}</span>
                     </li>
                 ))}
             </ul>
