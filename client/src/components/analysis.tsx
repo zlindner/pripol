@@ -47,9 +47,9 @@ const Filler = styled.div`
     text-align: right;
 `;
 
-interface ISegment {
+interface IPrediction {
     segment: string;
-    data_practice: string; // TODO remove
+    dataPractice: number;
 }
 
 interface IDataPractice {
@@ -59,7 +59,7 @@ interface IDataPractice {
 }
 
 type Props = {
-    segments: ISegment[];
+    predictions: IPrediction[];
 };
 
 const initialDataPractices: IDataPractice[] = [
@@ -124,25 +124,14 @@ const Analysis = (props: Props) => {
     const ref = useRef(null);
 
     useEffect(() => {
-        console.log(props.segments);
+        // process predictions
+        props.predictions.forEach((p) => {
+            console.log(p.dataPractice);
 
-        // process segments
-        for (let segment of props.segments) {
-            dataPractices
-                .find((d) => {
-                    let practice = d.name.toLowerCase();
-                    practice = practice.replace(/,/g, ''); // , -> blank
-                    practice = practice.replace(/&/g, ''); // & -> blank
-                    practice = practice.replace(/\//g, ' '); // / -> space
-                    practice = practice.replace(/ +/g, ' ');
-                    practice = practice.replace(/\ /g, '_');
-
-                    return segment.data_practice === practice;
-                })
-                ?.segments.push(segment.segment);
-        }
-
-        console.log(dataPractices);
+            if (p.dataPractice >= 0 && p.dataPractice <= 5) {
+                dataPractices[p.dataPractice].segments.push(p.segment);
+            }
+        });
 
         // scroll to analysis and make opaque
         if (opacity !== 1) {
@@ -154,7 +143,7 @@ const Analysis = (props: Props) => {
     // when the viewer is closing / closed grid width is handled by above media queries
     const gridStyle = viewing !== null || closing ? {} : { width: '100%', maxWidth: '1200px' };
 
-    const numSegments = props.segments.length;
+    const numSegments = props.predictions.length;
     const numSegmentsColour = numSegments === 0 ? '#e53935' : '#1e88e5';
 
     return (

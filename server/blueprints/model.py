@@ -1,47 +1,41 @@
 import tensorflow as tf
-
+import string
+import re
 from flask import Blueprint, request, jsonify
+from nltk.corpus import stopwords
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-
 bp = Blueprint('model', __name__, url_prefix='/model')
 
-# initialize tf for use with gpu
+# initialize tf for use with gpu (dev only?)
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.compat.v1.InteractiveSession(config=config)
 
 model = load_model('./server/model/cnn.h5')
 
-DATA_PRACTICES = [
-    'first_party_collection_use', 'third_party_sharing_collection', 'user_choice_control',
-    'international_specific_audiences', 'data_security', 'user_access_edit_deletion',
-    'policy_change', 'data_retention', 'do_not_track'
-]
-
-
-# TODO change to GET, somehow pass policy from policy.load()
 @bp.route('/predict', methods=['POST'])
 def predict():
-    policy = request.get_json()['policy']
+    segments = request.get_json()['segments']
 
-    if not policy:
+    if not segments:
         return '', 403
 
-    # policy is now a list of each segment's text
-    # convert text -> sequences
-    seq = policy_to_sequences(policy)
+    clean = clean_segments(segments)
 
-    # predict the data practice for each policy segment
+    # convert text -> sequences
+    seq = policy_to_sequences(clean)
+
+    # predict the data practice for each segment
     y_pred = model.predict(seq)
     y_classes = y_pred.argmax(axis=-1)
 
     predictions = []
 
-    for i, segment in enumerate(policy):
-        predictions.append({'segment': segment, 'data_practice': DATA_PRACTICES[y_classes[i]]})
+    for i, segment in enumerate(segments):
+        predictions.append({'segment': segment, 'data_practice': str(y_classes[i])})
 
     return jsonify({'predictions': predictions}), 200    
 
@@ -53,3 +47,22 @@ def policy_to_sequences(policy):
     seq = pad_sequences(seq, maxlen=100, padding='post')
 
     return seq
+
+def clean_segments(segments):
+    clean = []
+    stop_words = set(stopwords.words('english'))
+
+    for i in range(len(segments)):
+        clean.append(segments[i].lower())
+
+        # remove punctuation
+        clean[i] = clean[i].translate(str.maketrans('', '', string.punctuation))
+
+        # remove stop words
+        clean[i] = ' '.join([word for word in clean[i].split() if word not in stop_words])
+
+        # remove extra whitespace
+        clean[i] = re.sub(r' +', ' ', clean[i])
+        clean[i] = clean[i].strip()
+
+    return clean

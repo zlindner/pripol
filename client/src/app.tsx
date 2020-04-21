@@ -3,17 +3,22 @@ import GlobalStyle from './globalStyle';
 import Landing from './components/landing';
 import Analysis from './components/analysis';
 
-interface ISegment {
+interface IPrediction {
     segment: string;
-    data_practice: string;
+    dataPractice: number;
 }
 
 const App = () => {
-    const [segments, setSegments] = useState<ISegment[] | []>([]);
+    const [predictions, setPredictions] = useState<IPrediction[] | []>([]);
     const [analyzed, setAnalyzed] = useState(false);
 
-    const showAnalysis = (segments: ISegment[]) => {
-        setSegments(segments);
+    const showAnalysis = (data: { segment: string; data_practice: string }[]) => {
+        let predictions: IPrediction[] = [];
+
+        // convert string dataPractice to number
+        data.forEach((d) => predictions.push({ segment: d.segment, dataPractice: +d.data_practice }));
+
+        setPredictions(predictions);
         setAnalyzed(true);
     };
 
@@ -21,7 +26,7 @@ const App = () => {
         <React.Fragment>
             <GlobalStyle />
             <Landing showAnalysis={showAnalysis} />
-            {analyzed && <Analysis segments={segments} />}
+            {analyzed && <Analysis predictions={predictions} />}
         </React.Fragment>
     );
 };

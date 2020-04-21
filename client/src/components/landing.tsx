@@ -56,7 +56,7 @@ const Landing = (props: Props) => {
             .post('/policy/load', { url })
             .then((res) => {
                 setLoading(false);
-                onAnalyze(res.data.policy);
+                onAnalyze(res.data.segments);
             })
             .catch((err) => {
                 setLoading(false);
@@ -64,11 +64,11 @@ const Landing = (props: Props) => {
             });
     };
 
-    const onAnalyze = (policy: string[]) => {
+    const onAnalyze = (segments: string[]) => {
         setAnalyzing(true);
 
         axios
-            .post('/model/predict', { policy })
+            .post('/model/predict', { segments })
             .then((res) => {
                 setAnalyzing(false);
                 props.showAnalysis(res.data.predictions);

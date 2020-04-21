@@ -1,9 +1,6 @@
 import requests
-import string
-import re
 from flask import Blueprint, request, jsonify
 from bs4 import BeautifulSoup
-from nltk.corpus import stopwords
 
 bp = Blueprint('policy', __name__, url_prefix='/policy')
 
@@ -23,10 +20,7 @@ def load_policy():
     # parse segments from policy html
     segments = parse_html(html)
 
-    # clean segments
-    policy = clean_policy(segments)
-
-    return jsonify({'policy': policy}), 200
+    return jsonify({'segments': segments}), 200
 
 
 def parse_html(html):
@@ -53,23 +47,3 @@ def parse_html(html):
             segments.append(p_text)
 
     return segments
-
-
-def clean_policy(segments):
-    clean = []
-    stop_words = set(stopwords.words('english'))
-
-    for i in range(len(segments)):
-        clean.append(segments[i].lower())
-
-        # remove punctuation
-        clean[i] = clean[i].translate(str.maketrans('', '', string.punctuation))
-
-        # remove stop words
-        clean[i] = ' '.join([word for word in clean[i].split() if word not in stop_words])
-
-        # remove extra whitespace
-        clean[i] = re.sub(r' +', ' ', clean[i])
-        clean[i] = clean[i].strip()
-
-    return clean
