@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Ref } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import DataPractice from './dataPractice';
 import Viewer from './viewer';
@@ -24,11 +24,9 @@ const Grid = styled.div`
     align-items: center;
     position: relative;
     margin-right: 40px;
-
     @media only screen and (max-width: 1407px) {
         width: 300px;
     }
-
     @media only screen and (min-width: 1408px) and (max-width: 1678px) {
         width: 625px;
     }
